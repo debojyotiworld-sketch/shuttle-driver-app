@@ -18,11 +18,16 @@ export default function MapScreen() {
   };
 
   useEffect(() => {
+    let watchId: number | null = null;
+    let isActive = true;
+
     const init = async () => {
       const hasPermission = await requestLocationPermission();
-      if (!hasPermission) return;
+      if (!hasPermission || !isActive) {
+        return;
+      }
 
-      Geolocation.watchPosition(
+      watchId = Geolocation.watchPosition(
         position => {
           setLocation(position.coords);
         },
@@ -38,6 +43,13 @@ export default function MapScreen() {
     };
 
     init();
+
+    return () => {
+      isActive = false;
+      if (watchId !== null) {
+        Geolocation.clearWatch(watchId);
+      }
+    };
   }, []);
 
   if (!location) return <View style={styles.container} />;
