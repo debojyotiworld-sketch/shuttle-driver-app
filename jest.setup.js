@@ -2,13 +2,17 @@ import mockSafeAreaContext from 'react-native-safe-area-context/jest/mock';
 
 jest.mock('react-native-safe-area-context', () => mockSafeAreaContext);
 
-jest.mock('react-native-maps', () => {
+jest.mock('@maplibre/maplibre-react-native', () => {
   const React = require('react');
-  const MapView = (props) => React.createElement('MapView', props, props.children);
-  MapView.Marker = (props) => React.createElement('Marker', props, props.children);
-  MapView.Polyline = (props) => React.createElement('Polyline', props, props.children);
-  MapView.UrlTile = (props) => React.createElement('UrlTile', props, props.children);
-  return MapView;
+
+  return {
+    __esModule: true,
+    default: {
+      MapView: (props) => React.createElement('MapView', props, props.children),
+      Camera: (props) => React.createElement('Camera', props, props.children),
+      MarkerView: (props) => React.createElement('MarkerView', props, props.children),
+    },
+  };
 });
 
 jest.mock('react-native-geolocation-service', () => ({
