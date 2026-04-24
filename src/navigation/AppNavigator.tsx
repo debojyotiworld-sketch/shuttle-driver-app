@@ -3,9 +3,8 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AuthScreen from '../screens/AuthScreen';
 import HomeScreen from '../screens/HomeScreen';
-import MapScreen from '../screens/MapScreen';
-import QRScreen from '../screens/QRScreen';
 import TripsScreen from '../screens/TripsScreen';
+import OTPScreen from '../screens/OTPScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -28,8 +27,7 @@ export default function AppNavigator() {
           component={TripsScreen}
           options={{ title: 'Assigned Rides' }}
         />
-        <Stack.Screen name="Map" component={MapScreen} />
-        <Stack.Screen name="QR" component={QRScreen} />
+        <Stack.Screen name="OTP" component={OTPScreen} options={{ title: 'Confirm Ride' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
