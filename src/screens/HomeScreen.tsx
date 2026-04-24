@@ -6,25 +6,21 @@ export default function HomeScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Driver Status</Text>
+      <Text style={styles.title}>Driver Dashboard</Text>
 
       <View style={styles.row}>
         <Text style={styles.status}>
-          {isOnline ? '🟢 Online' : '🔴 Offline'}
+          Status: {isOnline ? '🟢 Online' : '🔴 Offline'}
         </Text>
         <Switch value={isOnline} onValueChange={setIsOnline} />
       </View>
 
-      <Text style={styles.info}>
-        Waiting for ride requests...
-      </Text>
-
       <TouchableOpacity
-        style={styles.bottomButton}
-        onPress={() => navigation.navigate('QR')}
+        style={styles.ridesButton}
+        onPress={() => navigation.navigate('Rides')}
       >
         <Text style={styles.buttonText}>
-          Start Ride (Show QR)
+          View Assigned Rides
         </Text>
       </TouchableOpacity>
     </View>
@@ -49,16 +45,9 @@ const styles = StyleSheet.create({
   status: {
     fontSize: 18,
   },
-  info: {
-    marginTop: 30,
-    fontSize: 16,
-    color: 'gray',
-  },
-
-  bottomButton: {
-    position: 'absolute',
-    bottom: 30,
-    width: '90%',
+  ridesButton: {
+    marginTop: 40,
+    width: '80%',
     backgroundColor: 'black',
     padding: 15,
     borderRadius: 10,
