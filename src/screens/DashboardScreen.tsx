@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, Switch, StyleSheet, TouchableOpacity } from 'react-native';
 
-export default function HomeScreen({ navigation }: any) {
+export default function DashboardScreen({ navigation }: any) {
   const [isOnline, setIsOnline] = useState(false);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Driver Status</Text>
+      <Text style={styles.title}>Minimal Dashboard</Text>
 
       <View style={styles.row}>
         <Text style={styles.status}>
@@ -21,10 +21,10 @@ export default function HomeScreen({ navigation }: any) {
 
       <TouchableOpacity
         style={styles.bottomButton}
-        onPress={() => navigation.navigate('QR')}
+        onPress={() => navigation.navigate('Rides')}
       >
         <Text style={styles.buttonText}>
-          Start Ride (Show QR)
+          View Assigned Rides
         </Text>
       </TouchableOpacity>
     </View>

@@ -20,7 +20,7 @@ const MOCK_TRIPS = [
   },
 ];
 
-export default function TripsScreen({ navigation }: any) {
+export default function RidesScreen({ navigation }: any) {
   const renderItem = ({ item }: { item: typeof MOCK_TRIPS[0] }) => (
     <View style={styles.tripCard}>
       <Text style={styles.passengerName}>Passenger: {item.passenger}</Text>

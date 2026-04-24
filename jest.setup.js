@@ -1,8 +1,9 @@
+/* eslint-env jest */
 import mockSafeAreaContext from 'react-native-safe-area-context/jest/mock';
 
 jest.mock('react-native-safe-area-context', () => mockSafeAreaContext);
 
-jest.mock('@maplibre/maplibre-react-native', () => {
+jest.mock('@rnmapbox/maps', () => {
   const React = require('react');
 
   return {
