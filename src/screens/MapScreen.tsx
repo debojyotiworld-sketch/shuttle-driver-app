@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, PermissionsAndroid, Platform } from 'react-native';
-import MapView, { Marker, UrlTile, Polyline } from 'react-native-maps';
+import Mapbox from '@rnmapbox/maps';
 import Geolocation from 'react-native-geolocation-service';
 
 export default function MapScreen({ route }: any) {
   const [location, setLocation] = useState<any>(null);
-  const [routeCoordinates, setRouteCoordinates] = useState<any[]>([]);
+  const [routeGeoJSON, setRouteGeoJSON] = useState<any>(null);
 
   const trip = route?.params?.trip;
 
-  // Request permission
+  // 🔐 Permission
   const requestLocationPermission = async () => {
     if (Platform.OS === 'android') {
       const granted = await PermissionsAndroid.request(
@@ -20,15 +20,14 @@ export default function MapScreen({ route }: any) {
     return true;
   };
 
+  // 📍 Live location tracking
   useEffect(() => {
     let watchId: number | null = null;
     let isActive = true;
 
     const init = async () => {
       const hasPermission = await requestLocationPermission();
-      if (!hasPermission || !isActive) {
-        return;
-      }
+      if (!hasPermission || !isActive) return;
 
       watchId = Geolocation.watchPosition(
         position => {
@@ -55,23 +54,26 @@ export default function MapScreen({ route }: any) {
     };
   }, []);
 
+  // 🛣️ Fetch route from OSRM
   useEffect(() => {
     if (trip?.source && trip?.destination) {
       const fetchRoute = async () => {
         try {
           const { source, destination } = trip;
+
           const url = `https://router.project-osrm.org/route/v1/driving/${source.longitude},${source.latitude};${destination.longitude},${destination.latitude}?overview=full&geometries=geojson`;
+
           const response = await fetch(url);
           const data = await response.json();
-          if (data.routes && data.routes.length > 0) {
-            const coords = data.routes[0].geometry.coordinates.map((coord: any) => ({
-              latitude: coord[1],
-              longitude: coord[0],
-            }));
-            setRouteCoordinates(coords);
+
+          if (data.routes?.length > 0) {
+            setRouteGeoJSON({
+              type: 'Feature',
+              geometry: data.routes[0].geometry,
+            });
           }
         } catch (error) {
-          console.error("Error fetching route:", error);
+          console.error('Error fetching route:', error);
         }
       };
 
@@ -79,59 +81,74 @@ export default function MapScreen({ route }: any) {
     }
   }, [trip]);
 
-  if (!location && !trip) return <View style={styles.container} />;
-
-  const initialRegion = trip?.source
-    ? {
-        latitude: (trip.source.latitude + trip.destination.latitude) / 2,
-        longitude: (trip.source.longitude + trip.destination.longitude) / 2,
-        latitudeDelta: Math.abs(trip.source.latitude - trip.destination.latitude) * 2 || 0.05,
-        longitudeDelta: Math.abs(trip.source.longitude - trip.destination.longitude) * 2 || 0.05,
-      }
-    : {
-        latitude: location?.latitude || 37.78825,
-        longitude: location?.longitude || -122.4324,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      };
+  // 🎯 Camera center
+  const getCenter = () => {
+    if (trip?.source && trip?.destination) {
+      return [
+        (trip.source.longitude + trip.destination.longitude) / 2,
+        (trip.source.latitude + trip.destination.latitude) / 2,
+      ];
+    }
+    if (location) {
+      return [location.longitude, location.latitude];
+    }
+    return [88.3639, 22.5726]; // Kolkata fallback
+  };
 
   return (
-    <MapView
-      style={styles.map}
-      initialRegion={initialRegion}
-    >
-      {/* OpenStreetMap Tiles */}
-      <UrlTile
-        urlTemplate="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        maximumZ={19}
-      />
-
-      {/* Driver Marker */}
-      {location && (
-        <Marker
-          coordinate={{
-            latitude: location.latitude,
-            longitude: location.longitude,
-          }}
-          title="You"
+    <View style={styles.container}>
+      <Mapbox.MapView
+        style={styles.map}
+      >
+        <Mapbox.Camera
+          zoomLevel={14}
+          centerCoordinate={getCenter()}
         />
-      )}
 
-      {/* Trip Markers and Polyline */}
-      {trip && (
-        <>
-          <Marker coordinate={trip.source} title="Pickup" pinColor="green" />
-          <Marker coordinate={trip.destination} title="Dropoff" pinColor="red" />
-          {routeCoordinates.length > 0 && (
-            <Polyline
-              coordinates={routeCoordinates}
-              strokeColor="#000" // black
-              strokeWidth={4}
+        {/* 🛣️ Route Line */}
+        {routeGeoJSON && (
+          <Mapbox.ShapeSource id="routeSource" shape={routeGeoJSON}>
+            <Mapbox.LineLayer
+              id="routeLine"
+              style={{
+                lineColor: '#000',
+                lineWidth: 4,
+              }}
             />
-          )}
-        </>
-      )}
-    </MapView>
+          </Mapbox.ShapeSource>
+        )}
+
+        {/* 📍 Driver Marker */}
+        {location && (
+          <Mapbox.PointAnnotation
+            id="driver"
+            coordinate={[location.longitude, location.latitude]}
+          >
+            <View style={styles.marker} />
+          </Mapbox.PointAnnotation>
+        )}
+
+        {/* 📍 Pickup */}
+        {trip?.source && (
+          <Mapbox.PointAnnotation
+            id="pickup"
+            coordinate={[trip.source.longitude, trip.source.latitude]}
+          >
+            <View style={[styles.marker, { backgroundColor: 'green' }]} />
+          </Mapbox.PointAnnotation>
+        )}
+
+        {/* 📍 Drop */}
+        {trip?.destination && (
+          <Mapbox.PointAnnotation
+            id="drop"
+            coordinate={[trip.destination.longitude, trip.destination.latitude]}
+          >
+            <View style={[styles.marker, { backgroundColor: 'red' }]} />
+          </Mapbox.PointAnnotation>
+        )}
+      </Mapbox.MapView>
+    </View>
   );
 }
 
@@ -142,4 +159,10 @@ const styles = StyleSheet.create({
   map: {
     flex: 1,
   },
+  marker: {
+    width: 12,
+    height: 12,
+    backgroundColor: 'blue',
+    borderRadius: 6,
+  }
 });
