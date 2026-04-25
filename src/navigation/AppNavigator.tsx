@@ -38,7 +38,7 @@ export default function AppNavigator() {
         />
         <Stack.Screen 
           name="Map"
-          component={MapScreen}
+          component={MapScreen as any}
           options={{ title: 'Live Trip Map', headerShown: false }}
         />
         <Stack.Screen 

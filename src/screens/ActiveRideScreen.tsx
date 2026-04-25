@@ -60,9 +60,9 @@ export default function ActiveRideScreen({ navigation, route }: ActiveRideProps)
           (error) => console.error('Error watching location:', error),
           {
             enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0,
             distanceFilter: 10,
+            interval: 5000,
+            fastestInterval: 2000,
           }
         );
       } catch (error) {
