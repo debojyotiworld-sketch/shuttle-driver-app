@@ -52,7 +52,6 @@ export default function AppNavigator() {
           options={{ title: 'Active Ride', headerShown: false }}
         />
         <Stack.Screen name="OTP" component={OTPScreen} options={{ title: 'Confirm Ride' }} />
-        <Stack.Screen name="Map" component={MapScreen} options={{ title: 'Ride Map' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

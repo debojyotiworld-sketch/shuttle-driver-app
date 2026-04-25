@@ -69,7 +69,7 @@ export default function PassengerBoardingScreen({
         Alert.alert('Invalid OTP', 'The OTP you entered is incorrect. Please try again.');
         setOtp('');
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Failed to verify OTP. Please try again.');
     } finally {
       setIsLoading(false);
@@ -84,7 +84,7 @@ export default function PassengerBoardingScreen({
       // Simulate API call to resend OTP
       await new Promise((resolve) => setTimeout(resolve, 1000));
       Alert.alert('OTP Sent', 'A new OTP has been sent to the passenger.');
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Failed to resend OTP. Please try again.');
       setOtpSent(true);
     }

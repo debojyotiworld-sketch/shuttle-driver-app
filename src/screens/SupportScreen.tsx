@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import CustomDropdown, { DropdownOption } from '../components/CustomDropdown';
+import CustomDropdown from '../components/CustomDropdown';
 
 export interface SupportTicket {
   id: string;

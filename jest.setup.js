@@ -14,7 +14,7 @@ jest.mock('@rnmapbox/maps', () => {
       MarkerView: (props) => React.createElement('MarkerView', props, props.children),
     },
   };
-});
+}, { virtual: true });
 
 jest.mock('react-native-geolocation-service', () => ({
   requestAuthorization: jest.fn(),

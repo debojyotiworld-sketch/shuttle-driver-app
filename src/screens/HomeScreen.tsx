@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Switch, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
-
-const SCREEN_WIDTH = Dimensions.get('window').width;
+import { View, Text, Switch, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 
 export default function HomeScreen({ navigation }: any) {
   const [isOnline, setIsOnline] = useState(false);

@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import Geolocation from 'react-native-geolocation-service';
@@ -21,13 +20,12 @@ interface ActiveRideProps {
 }
 
 export default function ActiveRideScreen({ navigation, route }: ActiveRideProps) {
-  const { trip, driverLocation: initialLocation, passengerBoarded } = route.params;
+  const { trip, driverLocation: initialLocation } = route.params;
   const mapRef = useRef<MapView>(null);
 
   const [driverLocation, setDriverLocation] = useState<LocationCoords>(initialLocation);
   const [destinationLocation] = useState<LocationCoords>(trip.destination);
   const [passengerLocation] = useState<LocationCoords>(trip.source);
-  const [isLoading, setIsLoading] = useState(false);
   const [distance, setDistance] = useState(0);
   const [eta, setEta] = useState('--');
 
