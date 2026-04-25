@@ -1,18 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
-import Geolocation from 'react-native-geolocation-service';
-
-interface LocationCoords {
-  latitude: number;
-  longitude: number;
-}
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 
 interface ActiveRideProps {
   navigation: any;
@@ -20,194 +7,52 @@ interface ActiveRideProps {
 }
 
 export default function ActiveRideScreen({ navigation, route }: ActiveRideProps) {
-  const { trip, driverLocation: initialLocation } = route.params;
-  const mapRef = useRef<MapView>(null);
-
-  const [driverLocation, setDriverLocation] = useState<LocationCoords>(initialLocation);
-  const [destinationLocation] = useState<LocationCoords>(trip.destination);
-  const [passengerLocation] = useState<LocationCoords>(trip.source);
-  const [distance, setDistance] = useState(0);
-  const [eta, setEta] = useState('--');
-
-  useEffect(() => {
-    let watchId: number | null = null;
-
-    const startTracking = async () => {
-      try {
-        watchId = Geolocation.watchPosition(
-          (position) => {
-            const { latitude, longitude } = position.coords;
-            setDriverLocation({ latitude, longitude });
-
-            // Calculate distance to destination
-            const dist = calculateDistance(
-              latitude,
-              longitude,
-              destinationLocation.latitude,
-              destinationLocation.longitude
-            );
-            setDistance(dist);
-
-            // Estimate time (assuming average speed of 40 km/h)
-            const estimatedMinutes = Math.round((dist / 40) * 60);
-            setEta(estimatedMinutes + ' min');
-
-            // Check if reached destination (within 100 meters)
-            if (dist < 0.1) {
-              Alert.alert('Trip Complete', 'You have reached the drop-off location.');
-            }
-          },
-          (error) => console.error('Error watching location:', error),
-          {
-            enableHighAccuracy: true,
-            distanceFilter: 10,
-            interval: 5000,
-            fastestInterval: 2000,
-          }
-        );
-      } catch (error) {
-        console.error('Tracking error:', error);
-      }
-    };
-
-    startTracking();
-
-    return () => {
-      if (watchId !== null) {
-        Geolocation.clearWatch(watchId);
-      }
-    };
-  }, [destinationLocation]);
-
-  const calculateDistance = (
-    lat1: number,
-    lon1: number,
-    lat2: number,
-    lon2: number
-  ): number => {
-    const R = 6371; // Earth's radius in km
-    const dLat = ((lat2 - lat1) * Math.PI) / 180;
-    const dLon = ((lon2 - lon1) * Math.PI) / 180;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  };
+  const { trip } = route.params;
 
   const handleCompleteRide = () => {
-    Alert.alert(
-      'Complete Ride',
-      'Are you sure you want to complete this ride?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Complete',
-          onPress: () => {
-            navigation.popToTop();
-            Alert.alert('Success', 'Ride completed successfully!');
-          },
+    Alert.alert('Complete Ride', 'Are you sure you want to complete this ride?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Complete',
+        onPress: () => {
+          navigation.popToTop();
+          Alert.alert('Success', 'Ride completed successfully!');
         },
-      ]
-    );
+      },
+    ]);
   };
-
-  const routeCoordinates = [driverLocation, destinationLocation];
 
   return (
     <View style={styles.container}>
-      {/* Map */}
-      <MapView
-        ref={mapRef}
-        style={styles.map}
-        provider={PROVIDER_GOOGLE}
-        initialRegion={{
-          latitude: (driverLocation.latitude + destinationLocation.latitude) / 2,
-          longitude: (driverLocation.longitude + destinationLocation.longitude) / 2,
-          latitudeDelta: 0.05,
-          longitudeDelta: 0.05,
-        }}
-        zoomControlEnabled={true}
-      >
-        {/* Driver Marker */}
-        <Marker
-          coordinate={driverLocation}
-          title="Your Location"
-          pinColor="#2196F3"
-        >
-          <View style={styles.driverMarkerContainer}>
-            <View style={styles.driverMarker} />
-          </View>
-        </Marker>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Active Ride</Text>
+      </View>
 
-        {/* Passenger Marker */}
-        <Marker
-          coordinate={passengerLocation}
-          title="Passenger"
-          pinColor="#FFC107"
-        >
-          <View style={styles.passengerMarkerContainer}>
-            <Text style={styles.markerEmoji}>👤</Text>
+      <View style={styles.content}>
+        <View style={styles.statusCard}>
+          <View style={styles.statusHeader}>
+            <View>
+              <Text style={styles.statusTitle}>Trip in Progress</Text>
+              <Text style={styles.passengerName}>{trip.passenger} on Board</Text>
+            </View>
+            <View style={styles.statusIndicator}>
+              <View style={styles.statusDot} />
+              <Text style={styles.statusText}>Active</Text>
+            </View>
           </View>
-        </Marker>
 
-        {/* Destination Marker */}
-        <Marker
-          coordinate={destinationLocation}
-          title="Drop-off"
-          pinColor="#4CAF50"
-        >
-          <View style={styles.destinationMarkerContainer}>
-            <Text style={styles.markerEmoji}>🏁</Text>
+          <View style={styles.destinationInfo}>
+            <Text style={styles.infoLabel}>Drop-off Location</Text>
+            <Text style={styles.infoValue}>{trip.dropoffAddress}</Text>
           </View>
-        </Marker>
 
-        {/* Route Polyline */}
-        <Polyline
-          coordinates={routeCoordinates}
-          strokeColor="#2196F3"
-          strokeWidth={4}
-        />
-      </MapView>
-
-      {/* Trip Status Card */}
-      <View style={styles.statusCard}>
-        <View style={styles.statusHeader}>
-          <View>
-            <Text style={styles.statusTitle}>Trip in Progress</Text>
-            <Text style={styles.passengerName}>{trip.passenger} on Board</Text>
+          <View style={styles.destinationInfo}>
+            <Text style={styles.infoLabel}>Pickup Location</Text>
+            <Text style={styles.infoValue}>{trip.pickupAddress}</Text>
           </View>
-          <View style={styles.statusIndicator}>
-            <View style={styles.statusDot} />
-            <Text style={styles.statusText}>Active</Text>
-          </View>
-        </View>
-
-        {/* Distance and ETA */}
-        <View style={styles.metricsContainer}>
-          <View style={styles.metricItem}>
-            <Text style={styles.metricLabel}>Distance to Destination</Text>
-            <Text style={styles.metricValue}>
-              {distance < 1 ? (distance * 1000).toFixed(0) + ' m' : distance.toFixed(2) + ' km'}
-            </Text>
-          </View>
-          <View style={[styles.metricItem, styles.metricBorder]}>
-            <Text style={styles.metricLabel}>Estimated Time</Text>
-            <Text style={styles.metricValue}>{eta}</Text>
-          </View>
-        </View>
-
-        {/* Destination Info */}
-        <View style={styles.destinationInfo}>
-          <Text style={styles.infoLabel}>📍 Drop-off</Text>
-          <Text style={styles.infoValue}>{trip.dropoffAddress}</Text>
         </View>
       </View>
 
-      {/* Action Buttons */}
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           style={[styles.actionButton, styles.completeButton]}
@@ -225,61 +70,25 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  map: {
+  header: {
+    backgroundColor: '#1a1a1a',
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  content: {
     flex: 1,
-  },
-  driverMarkerContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#2196F3',
+    padding: 16,
     justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: '#ffffff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3,
-    elevation: 5,
-  },
-  driverMarker: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#ffffff',
-  },
-  passengerMarkerContainer: {
-    width: 45,
-    height: 45,
-    borderRadius: 22.5,
-    backgroundColor: '#FFF8E1',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#FFC107',
-  },
-  destinationMarkerContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#E8F5E9',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#4CAF50',
-  },
-  markerEmoji: {
-    fontSize: 24,
   },
   statusCard: {
-    position: 'absolute',
-    bottom: 80,
-    left: 16,
-    right: 16,
     backgroundColor: '#ffffff',
     borderRadius: 12,
-    padding: 16,
+    padding: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -290,19 +99,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
-    paddingBottom: 12,
+    marginBottom: 20,
+    paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
   statusTitle: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 20,
+    fontWeight: 'bold',
     color: '#1a1a1a',
     marginBottom: 4,
   },
   passengerName: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#666',
   },
   statusIndicator: {
@@ -319,58 +128,33 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 12,
     color: '#4CAF50',
-    fontWeight: '600',
-  },
-  metricsContainer: {
-    flexDirection: 'row',
-    marginBottom: 12,
-    gap: 12,
-  },
-  metricItem: {
-    flex: 1,
-    backgroundColor: '#f8f8f8',
-    padding: 12,
-    borderRadius: 8,
-  },
-  metricBorder: {
-    borderLeftWidth: 1,
-    borderLeftColor: '#e0e0e0',
-  },
-  metricLabel: {
-    fontSize: 11,
-    color: '#999',
-    marginBottom: 4,
-  },
-  metricValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#2196F3',
+    fontWeight: 'bold',
   },
   destinationInfo: {
-    backgroundColor: '#E3F2FD',
-    padding: 12,
+    backgroundColor: '#f8f8f8',
+    padding: 16,
     borderRadius: 8,
     borderLeftWidth: 4,
     borderLeftColor: '#2196F3',
+    marginBottom: 12,
   },
   infoLabel: {
     fontSize: 12,
-    color: '#1565C0',
+    color: '#666',
     marginBottom: 4,
+    textTransform: 'uppercase',
   },
   infoValue: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#1a1a1a',
   },
   buttonContainer: {
-    position: 'absolute',
-    bottom: 16,
-    left: 16,
-    right: 16,
+    padding: 16,
+    paddingBottom: 32,
   },
   actionButton: {
-    paddingVertical: 14,
+    paddingVertical: 16,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
@@ -385,7 +169,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
