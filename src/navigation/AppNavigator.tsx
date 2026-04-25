@@ -5,6 +5,7 @@ import AuthScreen from '../screens/AuthScreen';
 import HomeScreen from '../screens/HomeScreen';
 import TripsScreen from '../screens/TripsScreen';
 import OTPScreen from '../screens/OTPScreen';
+import MapScreen from '../screens/MapScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -28,6 +29,7 @@ export default function AppNavigator() {
           options={{ title: 'Assigned Rides' }}
         />
         <Stack.Screen name="OTP" component={OTPScreen} options={{ title: 'Confirm Ride' }} />
+        <Stack.Screen name="Map" component={MapScreen} options={{ title: 'Ride Map' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
