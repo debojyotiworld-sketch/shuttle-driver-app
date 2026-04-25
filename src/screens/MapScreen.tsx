@@ -7,17 +7,30 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, Polyline, UrlTile } from 'react-native-maps';
 import Geolocation from 'react-native-geolocation-service';
 
-interface LocationCoords {
+interface Coordinate {
   latitude: number;
   longitude: number;
 }
 
+interface TripData {
+  id: string;
+  passenger: string;
+  source: Coordinate;
+  destination: Coordinate;
+  pickupAddress: string;
+  dropoffAddress: string;
+}
+
 interface MapScreenProps {
   navigation: any;
-  route: any;
+  route: {
+    params: {
+      trip: TripData;
+    };
+  };
 }
 
 export default function MapScreen({ navigation, route }: MapScreenProps) {
@@ -25,12 +38,12 @@ export default function MapScreen({ navigation, route }: MapScreenProps) {
   const mapRef = useRef<MapView>(null);
 
   // Location state
-  const [driverLocation, setDriverLocation] = useState<LocationCoords>({
+  const [driverLocation, setDriverLocation] = useState<Coordinate>({
     latitude: 37.78825,
     longitude: -122.4324,
   });
-  const [passengerLocation] = useState<LocationCoords>(trip.source);
-  const [destinationLocation] = useState<LocationCoords>(trip.destination);
+  const [passengerLocation] = useState<Coordinate>(trip.source);
+  const [destinationLocation] = useState<Coordinate>(trip.destination);
   const [isLoading, setIsLoading] = useState(true);
   const [rideStarted, setRideStarted] = useState(false);
   const [passengerArrived, setPassengerArrived] = useState(false);
@@ -39,12 +52,14 @@ export default function MapScreen({ navigation, route }: MapScreenProps) {
   // Get permission and start location tracking
   useEffect(() => {
     let watchId: number | null = null;
+    let isActive = true;
 
     const requestLocationPermission = async () => {
       try {
         // Get initial location
         Geolocation.getCurrentPosition(
           (position) => {
+            if (!isActive) return;
             const { latitude, longitude } = position.coords;
             setDriverLocation({ latitude, longitude });
             setIsLoading(false);
@@ -63,17 +78,26 @@ export default function MapScreen({ navigation, route }: MapScreenProps) {
             }
           },
           (error) => {
+            if (!isActive) return;
             console.error('Error getting location:', error);
             setIsLoading(false);
           },
           { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
 
-        // Watch for location updates every 5 seconds
+        // Watch for location updates
         watchId = Geolocation.watchPosition(
           (position) => {
+            if (!isActive) return;
             const { latitude, longitude } = position.coords;
             setDriverLocation({ latitude, longitude });
+
+            if (mapRef.current) {
+              mapRef.current.animateCamera(
+                { center: { latitude, longitude } },
+                { duration: 500 }
+              );
+            }
 
             // Calculate distance to passenger pickup
             const dist = calculateDistance(
@@ -97,6 +121,7 @@ export default function MapScreen({ navigation, route }: MapScreenProps) {
           }
         );
       } catch (error) {
+        if (!isActive) return;
         console.error('Permission error:', error);
         setIsLoading(false);
       }
@@ -105,6 +130,7 @@ export default function MapScreen({ navigation, route }: MapScreenProps) {
     requestLocationPermission();
 
     return () => {
+      isActive = false;
       if (watchId !== null) {
         Geolocation.clearWatch(watchId);
       }
@@ -133,7 +159,7 @@ export default function MapScreen({ navigation, route }: MapScreenProps) {
 
   const handleStartTrip = () => {
     setRideStarted(true);
-    Alert.alert('Trip Started', 'You have started the trip. Navigate to the passenger pickup location.');
+    Alert.alert('Navigation Started', 'Navigating to passenger pickup location.');
   };
 
   const handleArriveAtPassenger = () => {
@@ -171,11 +197,9 @@ export default function MapScreen({ navigation, route }: MapScreenProps) {
     );
   }
 
-  const routeCoordinates = [
-    driverLocation,
-    passengerLocation,
-    destinationLocation,
-  ];
+  const dynamicRouteCoordinates = !passengerArrived
+    ? [driverLocation, passengerLocation]
+    : [driverLocation, destinationLocation];
 
   return (
     <View style={styles.container}>
@@ -183,7 +207,7 @@ export default function MapScreen({ navigation, route }: MapScreenProps) {
       <MapView
         ref={mapRef}
         style={styles.map}
-        provider={PROVIDER_GOOGLE}
+        mapType="none"
         initialRegion={{
           latitude: driverLocation.latitude,
           longitude: driverLocation.longitude,
@@ -193,6 +217,7 @@ export default function MapScreen({ navigation, route }: MapScreenProps) {
         zoomControlEnabled={true}
         zoomTapEnabled={true}
       >
+        <UrlTile urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png" maximumZ={19} />
         {/* Driver Marker - Current Location */}
         <Marker
           coordinate={driverLocation}
@@ -235,7 +260,7 @@ export default function MapScreen({ navigation, route }: MapScreenProps) {
 
         {/* Route Polyline */}
         <Polyline
-          coordinates={routeCoordinates}
+          coordinates={dynamicRouteCoordinates}
           strokeColor="#2196F3"
           strokeWidth={4}
           lineDashPattern={[5]}
@@ -276,7 +301,7 @@ export default function MapScreen({ navigation, route }: MapScreenProps) {
             style={[styles.actionButton, styles.startButton]}
             onPress={handleStartTrip}
           >
-            <Text style={styles.buttonText}>Start Trip</Text>
+            <Text style={styles.buttonText}>Start Navigation</Text>
           </TouchableOpacity>
         ) : passengerArrived ? (
           <>

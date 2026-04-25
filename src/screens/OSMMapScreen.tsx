@@ -154,8 +154,8 @@ const OSMMapScreen: React.FC<OSMMapScreenProps> = ({ route, navigation }) => {
       {
         enableHighAccuracy: true,
         distanceFilter: 10, // Update every 10 meters
-        timeout: 10000,
-        maximumAge: 0,
+        interval: 5000,
+        fastestInterval: 2000,
       }
     );
 

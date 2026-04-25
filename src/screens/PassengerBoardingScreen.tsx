@@ -52,7 +52,7 @@ export default function PassengerBoardingScreen({
 
     try {
       // Simulate API call to verify OTP
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await new Promise<void>((resolve) => setTimeout(resolve, 2000));
 
       if (otp === correctOtp) {
         setShowSuccess(true);
@@ -82,7 +82,7 @@ export default function PassengerBoardingScreen({
     
     try {
       // Simulate API call to resend OTP
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise<void>((resolve) => setTimeout(resolve, 1000));
       Alert.alert('OTP Sent', 'A new OTP has been sent to the passenger.');
     } catch {
       Alert.alert('Error', 'Failed to resend OTP. Please try again.');
