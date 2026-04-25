@@ -29,7 +29,7 @@ export default function TripsScreen({ navigation }: any) {
 
       <TouchableOpacity
         style={styles.startButton}
-        onPress={() => navigation.navigate('OTP', { trip: item })}
+        onPress={() => navigation.navigate('Map', { trip: item })}
       >
         <Text style={styles.buttonText}>Start Trip</Text>
       </TouchableOpacity>
