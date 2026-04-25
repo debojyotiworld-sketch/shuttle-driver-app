@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  Dimensions,
 } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import Geolocation from 'react-native-geolocation-service';

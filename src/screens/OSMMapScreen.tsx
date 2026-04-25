@@ -7,7 +7,7 @@ import {
   Text,
   TouchableOpacity,
 } from 'react-native';
-import MapView, { UrlTile, Marker, Polyline, Region } from 'react-native-maps';
+import MapView, { UrlTile, Marker, Polyline } from 'react-native-maps';
 import Geolocation from 'react-native-geolocation-service';
 
 interface LocationCoords {
@@ -103,8 +103,8 @@ const OSMMapScreen: React.FC<OSMMapScreenProps> = ({ route, navigation }) => {
 
             setIsLoading(false);
           },
-          (error) => {
-            console.error('Geolocation error:', error);
+          (geoError) => {
+            console.error('Geolocation error:', geoError);
             setError('Failed to get current location');
             setIsLoading(false);
             Alert.alert(
@@ -148,8 +148,8 @@ const OSMMapScreen: React.FC<OSMMapScreenProps> = ({ route, navigation }) => {
           );
         }
       },
-      (error) => {
-        console.error('Watch position error:', error);
+      (watchError) => {
+        console.error('Watch position error:', watchError);
       },
       {
         enableHighAccuracy: true,
