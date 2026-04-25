@@ -23,3 +23,13 @@ jest.mock('react-native-geolocation-service', () => ({
   clearWatch: jest.fn(),
   stopObserving: jest.fn(),
 }));
+
+jest.mock('react-native-maps', () => {
+  const React = require('react');
+  return {
+    __esModule: true,
+    default: (props) => React.createElement('MapView', props, props.children),
+    Marker: (props) => React.createElement('Marker', props, props.children),
+    UrlTile: (props) => React.createElement('UrlTile', props, props.children),
+  };
+});

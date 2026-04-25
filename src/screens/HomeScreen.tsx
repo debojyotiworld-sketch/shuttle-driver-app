@@ -23,6 +23,15 @@ export default function HomeScreen({ navigation }: any) {
           View Assigned Rides
         </Text>
       </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.ridesButton}
+        onPress={() => navigation.navigate('Map')}
+      >
+        <Text style={styles.buttonText}>
+          View Map
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
