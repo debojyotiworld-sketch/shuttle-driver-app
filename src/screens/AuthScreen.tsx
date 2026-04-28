@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+} from 'react-native';
 import { supabase } from '../utils/supabase';
 
 export default function AuthScreen({ navigation }: any) {
@@ -8,29 +17,42 @@ export default function AuthScreen({ navigation }: any) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // Check existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         navigation.replace('Dashboard');
       }
     });
 
-    supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        navigation.replace('Dashboard');
+    // Listen for auth changes
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (session) {
+          navigation.replace('Dashboard');
+        }
       }
-    });
+    );
+
+    return () => {
+      listener.subscription.unsubscribe();
+    };
   }, []);
 
-  const handleLogin = async () => {
+  const handleAuth = async () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Please enter email and password');
+      return;
+    }
+
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
+
+    let error;
+
+    await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    if (error) {
-      Alert.alert('Error', error.message);
-    }
     setLoading(false);
   };
 
@@ -40,7 +62,9 @@ export default function AuthScreen({ navigation }: any) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.formContainer}>
-        <Text style={styles.title}>Login</Text>
+        <Text style={styles.title}>
+          {'Login'}
+        </Text>
 
         <TextInput
           style={styles.input}
@@ -59,8 +83,16 @@ export default function AuthScreen({ navigation }: any) {
           secureTextEntry
         />
 
-        <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
-          <Text style={styles.buttonText}>{loading ? 'Loading...' : 'Log In'}</Text>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={handleAuth}
+          disabled={loading}
+        >
+          <Text style={styles.buttonText}>
+            {loading
+              ? 'Loading...'
+                : 'Log In'}
+          </Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -101,5 +133,10 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  toggleText: {
+    textAlign: 'center',
+    marginTop: 15,
+    color: 'gray',
   },
 });

@@ -73,3 +73,14 @@ yarn-error.log
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+<<<<<<< HEAD
+=======
+
+
+
+android/build/
+android/.gradle/
+android/app/build/
+ios/build/
+.env    
+>>>>>>> 0196576 (Major update: Initial commit)

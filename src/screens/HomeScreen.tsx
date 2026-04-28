@@ -13,6 +13,7 @@ export default function HomeScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
+<<<<<<< HEAD
       {/* Header with Logout Button */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Driver Portal</Text>
@@ -24,10 +25,13 @@ export default function HomeScreen({ navigation }: any) {
         </TouchableOpacity>
       </View>
 
+=======
+>>>>>>> 0196576 (Major update: Initial commit)
       <ScrollView 
         style={styles.scrollContent}
         contentContainerStyle={styles.scrollContentContainer}
       >
+<<<<<<< HEAD
         {/* Status Card */}
         <View style={styles.statusCard}>
           <View style={styles.statusHeader}>
@@ -65,6 +69,8 @@ export default function HomeScreen({ navigation }: any) {
             )}
           </View>
         </View>
+=======
+>>>>>>> 0196576 (Major update: Initial commit)
 
         {/* Quick Stats */}
         <View style={styles.statsContainer}>

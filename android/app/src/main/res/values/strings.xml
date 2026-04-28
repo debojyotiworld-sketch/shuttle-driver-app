@@ -1,3 +1,7 @@
 <resources>
+<<<<<<< HEAD
     <string name="app_name">DriverApp</string>
+=======
+    <string name="app_name">Rydon</string>
+>>>>>>> 0196576 (Major update: Initial commit)
 </resources>

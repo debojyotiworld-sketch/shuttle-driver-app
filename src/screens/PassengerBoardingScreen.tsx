@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+<<<<<<< HEAD
 import {
   View,
   Text,
@@ -244,10 +245,114 @@ export default function PassengerBoardingScreen({
         </View>
       </Modal>
     </KeyboardAvoidingView>
+=======
+import { 
+  View, 
+  Text, 
+  FlatList, 
+  StyleSheet, 
+  ActivityIndicator, 
+  SafeAreaView, 
+  StatusBar 
+} from 'react-native';
+import { supabase } from '../utils/supabase';
+
+export default function PassengerBoardingScreen({ route }: any) {
+  // 1. ALL HOOKS MUST GO AT THE TOP
+  const { trip } = route.params || {};
+  const [stops, setStops] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchTripDetails = async () => {
+      if (!trip?.route_id) {
+        setErrorMessage("No valid Route ID found.");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const { data: stopsData, error: stopsError } = await supabase
+          .from('stops')
+          .select('*')
+          .eq('route_id', trip.route_id)
+          .order('stop_order', { ascending: true });
+
+        if (stopsError) throw stopsError;
+        setStops(stopsData || []);
+      } catch (err: any) {
+        setErrorMessage(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTripDetails();
+  }, [trip?.route_id]);
+
+  // 2. HELPER RENDER FUNCTION
+  const renderStop = ({ item }: any) => (
+    <View style={styles.stopCard}>
+      <div style={styles.dotLineContainer}>
+        <View style={styles.dot} />
+        <View style={styles.line} />
+      </div>
+      <View style={styles.stopInfo}>
+        <Text style={styles.stopName}>{item.name || 'Unnamed Stop'}</Text>
+        <Text style={styles.stopDetails}>
+          Order: {item.stop_order} | Est. Time: {item.estimated_time ?? 'N/A'} min
+        </Text>
+        <Text style={styles.coords}>
+          Lat: {item.latitude}, Lng: {item.longitude}
+        </Text>
+      </View>
+    </View>
+  );
+
+  // 3. CONDITIONAL RENDERING GOES AFTER HOOKS
+  if (!trip) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.errorText}>Error: No trip data provided.</Text>
+      </View>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" />
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Route Stoppages</Text>
+        <Text style={styles.subTitle}>Route ID: {trip.route_id || 'Unknown'}</Text>
+      </View>
+
+      {loading ? (
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color="#2196F3" />
+        </View>
+      ) : errorMessage ? (
+        <View style={styles.centered}>
+          <Text style={styles.errorText}>{errorMessage}</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={stops}
+          keyExtractor={(item) => item.id}
+          renderItem={renderStop}
+          contentContainerStyle={{ padding: 20 }}
+          ListHeaderComponent={<Text style={styles.sectionTitle}>Stoppage List</Text>}
+          ListEmptyComponent={<Text style={styles.emptyText}>No stops found.</Text>}
+        />
+      )}
+    </SafeAreaView>
+>>>>>>> 0196576 (Major update: Initial commit)
   );
 }
 
 const styles = StyleSheet.create({
+<<<<<<< HEAD
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
@@ -499,3 +604,22 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 });
+=======
+  container: { flex: 1, backgroundColor: '#FFF' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  header: { backgroundColor: '#1A1A1A', padding: 20, paddingBottom: 25 },
+  headerTitle: { color: '#FFF', fontSize: 20, fontWeight: 'bold' },
+  subTitle: { color: '#AAA', fontSize: 12, marginTop: 4 },
+  sectionTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 20, color: '#555' },
+  stopCard: { flexDirection: 'row', minHeight: 80 },
+  dotLineContainer: { alignItems: 'center', marginRight: 15, width: 20 },
+  dot: { width: 14, height: 14, borderRadius: 7, backgroundColor: '#2196F3', zIndex: 1 },
+  line: { width: 2, flex: 1, backgroundColor: '#E0E0E0' },
+  stopInfo: { flex: 1, paddingBottom: 25 },
+  stopName: { fontSize: 16, fontWeight: 'bold', color: '#333' },
+  stopDetails: { fontSize: 13, color: '#666', marginTop: 4 },
+  coords: { fontSize: 11, color: '#2196F3', marginTop: 4 },
+  errorText: { color: '#D32F2F', fontWeight: 'bold' },
+  emptyText: { textAlign: 'center', color: '#999', marginTop: 40 }
+});
+>>>>>>> 0196576 (Major update: Initial commit)
