@@ -11,6 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import CustomDropdown from '../components/CustomDropdown';
+import { AlertCircle } from 'lucide-react-native';
 
 export interface SupportTicket {
   id: string;
@@ -109,7 +110,7 @@ export default function SupportScreen({ navigation }: SupportScreenProps) {
     setIsLoading(true);
     try {
       const ticket = await submitSupportTicket(issueType, description);
-      
+
       // Add new ticket to list
       setPreviousTickets([
         {
@@ -135,18 +136,34 @@ export default function SupportScreen({ navigation }: SupportScreenProps) {
     }
   };
 
+  const submitSupportTicket = async (type: string, desc: string) => {
+    // Simulate API call delay
+    return new Promise<SupportTicket>((resolve) => {
+      setTimeout(() => {
+        resolve({
+          id: Math.random().toString(36).substr(2, 9),
+          issueType: type,
+          description: desc,
+          status: 'open',
+          createdAt: new Date().toISOString(),
+        });
+      }, 1500);
+    });
+  };
+
   const handleEmergency = () => {
     Alert.alert(
       'Emergency Support',
       'We are connecting you with our 24/7 support team. Do you want to proceed?',
       [
-        { text: 'Cancel', onPress: () => {}, style: 'cancel' },
+        { text: 'Cancel', onPress: () => { }, style: 'cancel' },
         {
           text: 'Call Support',
           onPress: () => {
-            // In production, implement actual emergency call
-            Alert.alert('Success', 'Support team will call you shortly');
+            submitSupportTicket('emergency', 'Driver has initiated an emergency support request');
+            // Here you would integrate with the phone's dialer or support chat system
           },
+          style: 'destructive',
         },
       ]
     );
@@ -172,13 +189,10 @@ export default function SupportScreen({ navigation }: SupportScreenProps) {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
+
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Support</Text>
-        <View style={{ width: 50 }} />
+        <Text style={styles.headerTitle}>Support Center</Text>
+        <View style={{ width: 24 }} /> {/* Match the icon size for perfect centering */}
       </View>
 
       <ScrollView
@@ -190,7 +204,7 @@ export default function SupportScreen({ navigation }: SupportScreenProps) {
           style={styles.emergencyButton}
           onPress={handleEmergency}
         >
-          <Text style={styles.emergencyIcon}>🚨</Text>
+          <AlertCircle style={styles.emergencyIcon} />
           <View style={{ flex: 1 }}>
             <Text style={styles.emergencyTitle}>Emergency Support</Text>
             <Text style={styles.emergencySubtitle}>
@@ -325,13 +339,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   header: {
-    backgroundColor: '#1a1a1a',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    backgroundColor: '#000000',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    paddingTop: 10,
   },
   backButton: {
     color: '#ffffff',
@@ -570,4 +584,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontStyle: 'italic',
   },
+  iconContainer: {
+    padding: 4,
+  }
 });

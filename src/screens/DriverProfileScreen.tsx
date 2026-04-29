@@ -53,7 +53,7 @@ export default function DriverProfileScreen() {
         <InfoRow label="Email" value={driver?.email} />
         <InfoRow label="License" value={driver?.license_number} />
         <InfoRow label="Experience" value={`${driver?.experience_years} Years`} />
-        <InfoRow label="Rating" value={`⭐ ${driver?.rating}`} />
+        <InfoRow label="Rating" value={`${driver?.rating}`} />
         <InfoRow label="Total Trips" value={driver?.total_trips} />
       </View>
     </ScrollView>

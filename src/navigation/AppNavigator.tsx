@@ -32,7 +32,7 @@ export default function AppNavigator() {
           name="Dashboard"
           component={HomeScreen}
           options={({ navigation }) => ({
-            headerTitle: 'Driver Dashboard',
+            headerTitle: 'Dashboard',
             headerRight: () => (
               <View style={styles.headerRightContainer}>
                 {/* Profile Icon */}
@@ -67,7 +67,6 @@ export default function AppNavigator() {
         <Stack.Screen
           name="Rides"
           component={TripsScreen}
-          options={{ title: 'Assigned Rides' }}
         />
 
         {/* ... rest of your screens ... */}

@@ -51,13 +51,6 @@ export default function HomeScreen({ navigation }: any) {
           >
             <Text style={styles.actionButtonText}>Contact Support</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.actionButton, styles.earningsButton]}
-            onPress={() => {}}
-          >
-            <Text style={styles.actionButtonText}>View Earnings</Text>
-          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>

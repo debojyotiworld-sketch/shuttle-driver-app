@@ -1,625 +1,159 @@
-import React, { useState, useEffect } from 'react';
-<<<<<<< HEAD
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
+  FlatList,
   StyleSheet,
-  TouchableOpacity,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
   ActivityIndicator,
-  Modal,
-} from 'react-native';
-import { supabase } from '../utils/supabase';
-
-interface PassengerBoardingProps {
-  navigation: any;
-  route: any;
-}
-
-export default function PassengerBoardingScreen({
-  navigation,
-  route,
-}: PassengerBoardingProps) {
-  const { trip, driverLocation } = route.params;
-
-  const [otp, setOtp] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [otpSent, setOtpSent] = useState(true);
-  const [otpTimer, setOtpTimer] = useState(60);
-  const [showSuccess, setShowSuccess] = useState(false);
-
-  // Countdown timer for OTP resend
-  useEffect(() => {
-    if (!otpSent && otpTimer > 0) {
-      const timer = setTimeout(() => setOtpTimer(otpTimer - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-    if (otpTimer === 0) {
-      setOtpSent(true);
-      setOtpTimer(60);
-    }
-  }, [otpTimer, otpSent]);
-
-  const handleVerifyOTP = async () => {
-    if (otp.length !== 6) {
-      Alert.alert('Invalid OTP', 'Please enter a 6-digit OTP');
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      // Assuming a generic backend call to verify OTP, e.g., Supabase function or updating trip status
-      // We'll mock the verification logic to pass if OTP is '123456' as a fallback, but make a DB query placeholder
-      // For now, let's pretend we have a trips table with a column 'otp' for the passenger's OTP
-      const { data, error } = await supabase
-        .from('trips')
-        .select('otp')
-        .eq('id', trip.id)
-        .single();
-
-      let isVerified = false;
-
-      if (error) {
-         // Fallback verification for demo purposes if backend fails
-         isVerified = otp === '123456';
-      } else {
-         isVerified = data.otp === otp;
-      }
-
-      if (isVerified) {
-        setShowSuccess(true);
-        setTimeout(() => {
-          setShowSuccess(false);
-          // Navigate to active ride screen
-          navigation.navigate('ActiveRide', {
-            trip,
-            driverLocation,
-            passengerBoarded: true,
-          });
-        }, 2000);
-      } else {
-        Alert.alert('Invalid OTP', 'The OTP you entered is incorrect. Please try again.');
-        setOtp('');
-      }
-    } catch {
-      Alert.alert('Error', 'Failed to verify OTP. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleResendOTP = async () => {
-    setOtpSent(false);
-    setOtp('');
-    
-    try {
-      // Simulate API call to resend OTP
-      await new Promise<void>((resolve) => setTimeout(resolve, 1000));
-      Alert.alert('OTP Sent', 'A new OTP has been sent to the passenger.');
-    } catch {
-      Alert.alert('Error', 'Failed to resend OTP. Please try again.');
-      setOtpSent(true);
-    }
-  };
-
-  const handleCancel = () => {
-    Alert.alert(
-      'Cancel Ride',
-      'Are you sure you want to cancel this ride?',
-      [
-        { text: 'No', style: 'cancel' },
-        {
-          text: 'Yes',
-          onPress: () => {
-            navigation.popToTop();
-          },
-        },
-      ]
-    );
-  };
-
-  return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
-          <Text style={styles.backText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Passenger Verification</Text>
-        <View style={{ width: 50 }} />
-      </View>
-
-      <View style={styles.content}>
-        {/* Passenger Info Card */}
-        <View style={styles.infoCard}>
-          <View style={styles.avatarContainer}>
-            <Text style={styles.avatar}>👤</Text>
-          </View>
-          <Text style={styles.passengerName}>{trip.passenger}</Text>
-          <Text style={styles.pickupAddress}>{trip.pickupAddress}</Text>
-          <View style={styles.statusBadge}>
-            <Text style={styles.statusText}>Ready to Board</Text>
-          </View>
-        </View>
-
-        {/* OTP Verification Section */}
-        <View style={styles.otpSection}>
-          <Text style={styles.sectionTitle}>Enter Passenger OTP</Text>
-          <Text style={styles.description}>
-            Ask the passenger to provide their 6-digit OTP code
-          </Text>
-
-          {/* OTP Input */}
-          <TextInput
-            style={[styles.otpInput, otp.length === 6 && styles.otpInputFilled]}
-            placeholder="000000"
-            value={otp}
-            onChangeText={(text) => {
-              // Only allow numbers and max 6 digits
-              const numericText = text.replace(/[^0-9]/g, '').slice(0, 6);
-              setOtp(numericText);
-            }}
-            keyboardType="number-pad"
-            maxLength={6}
-            editable={!isLoading}
-            placeholderTextColor="#ccc"
-          />
-
-          {/* Verify Button */}
-          <TouchableOpacity
-            style={[
-              styles.verifyButton,
-              (otp.length !== 6 || isLoading) && styles.verifyButtonDisabled,
-            ]}
-            onPress={handleVerifyOTP}
-            disabled={otp.length !== 6 || isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#ffffff" size="small" />
-            ) : (
-              <Text style={styles.verifyButtonText}>Verify OTP</Text>
-            )}
-          </TouchableOpacity>
-
-          {/* Resend OTP Option */}
-          <View style={styles.resendContainer}>
-            <Text style={styles.resendText}>Didn't receive OTP?</Text>
-            <TouchableOpacity
-              disabled={!otpSent}
-              onPress={handleResendOTP}
-            >
-              <Text
-                style={[
-                  styles.resendLink,
-                  !otpSent && styles.resendLinkDisabled,
-                ]}
-              >
-                {otpSent ? 'Resend' : `Resend in ${otpTimer}s`}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Trip Details */}
-        <View style={styles.tripDetails}>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>📍 Pickup Location</Text>
-            <Text style={styles.detailValue}>{trip.pickupAddress}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>🏁 Drop-off Location</Text>
-            <Text style={styles.detailValue}>{trip.dropoffAddress}</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Cancel Button */}
-      <View style={styles.footerButton}>
-        <TouchableOpacity
-          style={styles.cancelButton}
-          onPress={handleCancel}
-        >
-          <Text style={styles.cancelButtonText}>Cancel Ride</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Success Modal */}
-      <Modal visible={showSuccess} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.successCard}>
-            <Text style={styles.successIcon}>✓</Text>
-            <Text style={styles.successTitle}>Passenger Verified!</Text>
-            <Text style={styles.successMessage}>
-              {trip.passenger} has been confirmed. Starting the trip now...
-            </Text>
-          </View>
-        </View>
-      </Modal>
-    </KeyboardAvoidingView>
-=======
-import { 
-  View, 
-  Text, 
-  FlatList, 
-  StyleSheet, 
-  ActivityIndicator, 
-  SafeAreaView, 
-  StatusBar 
+  SafeAreaView
 } from 'react-native';
 import { supabase } from '../utils/supabase';
 
 export default function PassengerBoardingScreen({ route }: any) {
-  // 1. ALL HOOKS MUST GO AT THE TOP
   const { trip } = route.params || {};
-  const [stops, setStops] = useState<any[]>([]);
+  const [passengers, setPassengers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchTripDetails = async () => {
-      if (!trip?.route_id) {
-        setErrorMessage("No valid Route ID found.");
-        setLoading(false);
+    fetchPassengers();
+  }, []);
+
+  const fetchPassengers = async () => {
+    try {
+      if (!trip?.route_id) return;
+
+      setLoading(true);
+
+      const { data: schedules, error: schError } = await supabase
+        .from('schedules')
+        .select('id')
+        .eq('route_id', trip.route_id)
+        .eq('driver_id', trip.driver_id);
+
+      if (schError) throw schError;
+
+      if (!schedules || schedules.length === 0) {
+        setPassengers([]);
         return;
       }
 
-      try {
-        setLoading(true);
-        const { data: stopsData, error: stopsError } = await supabase
-          .from('stops')
-          .select('*')
-          .eq('route_id', trip.route_id)
-          .order('stop_order', { ascending: true });
+      const scheduleIds = schedules.map(s => s.id);
 
-        if (stopsError) throw stopsError;
-        setStops(stopsData || []);
-      } catch (err: any) {
-        setErrorMessage(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(`
+          id,
+          status,
+          pickup,
+          drop,
+          customers (
+            id,
+            name,
+            phone,
+            email
+          )
+        `)
+        .in('schedule_id', scheduleIds)
+        .in('status', ['confirmed', 'in-transit']); // filter optional
 
-    fetchTripDetails();
-  }, [trip?.route_id]);
+      if (error) throw error;
 
-  // 2. HELPER RENDER FUNCTION
-  const renderStop = ({ item }: any) => (
-    <View style={styles.stopCard}>
-      <div style={styles.dotLineContainer}>
-        <View style={styles.dot} />
-        <View style={styles.line} />
-      </div>
-      <View style={styles.stopInfo}>
-        <Text style={styles.stopName}>{item.name || 'Unnamed Stop'}</Text>
-        <Text style={styles.stopDetails}>
-          Order: {item.stop_order} | Est. Time: {item.estimated_time ?? 'N/A'} min
-        </Text>
-        <Text style={styles.coords}>
-          Lat: {item.latitude}, Lng: {item.longitude}
-        </Text>
-      </View>
+      setPassengers(data || []);
+    } catch (err: any) {
+      console.error(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderPassenger = ({ item }: any) => (
+    <View style={styles.card}>
+      <Text style={styles.name}>
+        {item.customers?.name || 'No Name'}
+      </Text>
+
+      <Text style={styles.phone}>
+        📞 {item.customers?.phone}
+      </Text>
+
+      <Text style={styles.route}>
+        {item.pickup} → {item.drop}
+      </Text>
+
+      <Text style={[
+        styles.status,
+        { color: item.status === 'confirmed' ? 'green' : 'orange' }
+      ]}>
+        {item.status.toUpperCase()}
+      </Text>
     </View>
   );
 
-  // 3. CONDITIONAL RENDERING GOES AFTER HOOKS
-  if (!trip) {
+  if (loading) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.errorText}>Error: No trip data provided.</Text>
+      <View style={styles.center}>
+        <ActivityIndicator size="large" />
       </View>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" />
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Route Stoppages</Text>
-        <Text style={styles.subTitle}>Route ID: {trip.route_id || 'Unknown'}</Text>
-      </View>
+      <Text style={styles.header}>Passenger List</Text>
 
-      {loading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#2196F3" />
-        </View>
-      ) : errorMessage ? (
-        <View style={styles.centered}>
-          <Text style={styles.errorText}>{errorMessage}</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={stops}
-          keyExtractor={(item) => item.id}
-          renderItem={renderStop}
-          contentContainerStyle={{ padding: 20 }}
-          ListHeaderComponent={<Text style={styles.sectionTitle}>Stoppage List</Text>}
-          ListEmptyComponent={<Text style={styles.emptyText}>No stops found.</Text>}
-        />
-      )}
+      <FlatList
+        data={passengers}
+        keyExtractor={(item) => item.id}
+        renderItem={renderPassenger}
+        contentContainerStyle={{ padding: 16 }}
+        ListEmptyComponent={
+          <Text style={styles.empty}>No passengers found</Text>
+        }
+      />
     </SafeAreaView>
->>>>>>> 0196576 (Major update: Initial commit)
   );
 }
 
 const styles = StyleSheet.create({
-<<<<<<< HEAD
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    backgroundColor: '#1a1a1a',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 8,
-  },
-  backButton: {
-    width: 50,
-  },
-  backText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#ffffff',
-    flex: 1,
-    textAlign: 'center',
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-  },
-
-  // Passenger Info Card
-  infoCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 20,
-    alignItems: 'center',
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  avatarContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#E3F2FD',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  avatar: {
-    fontSize: 32,
-  },
-  passengerName: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 8,
-  },
-  pickupAddress: {
-    fontSize: 13,
-    color: '#666',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  statusBadge: {
-    backgroundColor: '#E8F5E9',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#4CAF50',
-  },
-  statusText: {
-    color: '#2E7D32',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-
-  // OTP Section
-  otpSection: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 8,
-  },
-  description: {
-    fontSize: 13,
-    color: '#666',
-    marginBottom: 16,
-    lineHeight: 18,
-  },
-  otpInput: {
-    borderWidth: 2,
-    borderColor: '#e0e0e0',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 32,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    color: '#1a1a1a',
-    letterSpacing: 8,
-    marginBottom: 16,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-  otpInputFilled: {
-    borderColor: '#2196F3',
-    backgroundColor: '#E3F2FD',
-  },
-  verifyButton: {
-    backgroundColor: '#2196F3',
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: 12,
-    shadowColor: '#2196F3',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  verifyButtonDisabled: {
-    backgroundColor: '#B0BEC5',
-    shadowOpacity: 0.1,
-  },
-  verifyButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  resendContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 6,
-  },
-  resendText: {
-    fontSize: 13,
-    color: '#666',
-  },
-  resendLink: {
-    fontSize: 13,
-    color: '#2196F3',
-    fontWeight: '600',
-  },
-  resendLinkDisabled: {
-    color: '#999',
-  },
-
-  // Trip Details
-  tripDetails: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  detailRow: {
-    marginBottom: 12,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  detailLabel: {
-    fontSize: 12,
-    color: '#999',
-    marginBottom: 4,
-  },
-  detailValue: {
-    fontSize: 14,
-    color: '#1a1a1a',
-    fontWeight: '600',
-  },
-
-  // Footer
-  footerButton: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-  cancelButton: {
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#FF5252',
-  },
-  cancelButtonText: {
-    color: '#FF5252',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-
-  // Success Modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  successCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    paddingHorizontal: 24,
-    paddingVertical: 40,
-    alignItems: 'center',
-    width: '80%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 10,
-  },
-  successIcon: {
-    fontSize: 60,
-    marginBottom: 16,
-    color: '#4CAF50',
-  },
-  successTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 8,
-  },
-  successMessage: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-});
-=======
   container: { flex: 1, backgroundColor: '#FFF' },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: { backgroundColor: '#1A1A1A', padding: 20, paddingBottom: 25 },
-  headerTitle: { color: '#FFF', fontSize: 20, fontWeight: 'bold' },
-  subTitle: { color: '#AAA', fontSize: 12, marginTop: 4 },
-  sectionTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 20, color: '#555' },
-  stopCard: { flexDirection: 'row', minHeight: 80 },
-  dotLineContainer: { alignItems: 'center', marginRight: 15, width: 20 },
-  dot: { width: 14, height: 14, borderRadius: 7, backgroundColor: '#2196F3', zIndex: 1 },
-  line: { width: 2, flex: 1, backgroundColor: '#E0E0E0' },
-  stopInfo: { flex: 1, paddingBottom: 25 },
-  stopName: { fontSize: 16, fontWeight: 'bold', color: '#333' },
-  stopDetails: { fontSize: 13, color: '#666', marginTop: 4 },
-  coords: { fontSize: 11, color: '#2196F3', marginTop: 4 },
-  errorText: { color: '#D32F2F', fontWeight: 'bold' },
-  emptyText: { textAlign: 'center', color: '#999', marginTop: 40 }
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+
+  header: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    padding: 16
+  },
+
+  card: {
+    backgroundColor: '#F9F9F9',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12
+  },
+
+  name: {
+    fontSize: 16,
+    fontWeight: 'bold'
+  },
+
+  phone: {
+    marginTop: 4,
+    color: '#555'
+  },
+
+  route: {
+    marginTop: 4,
+    color: '#777'
+  },
+
+  status: {
+    marginTop: 6,
+    fontWeight: 'bold'
+  },
+
+  empty: {
+    textAlign: 'center',
+    marginTop: 40,
+    color: '#999'
+  }
 });
->>>>>>> 0196576 (Major update: Initial commit)
