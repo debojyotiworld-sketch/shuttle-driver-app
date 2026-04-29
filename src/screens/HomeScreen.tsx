@@ -13,64 +13,10 @@ export default function HomeScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-<<<<<<< HEAD
-      {/* Header with Logout Button */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Driver Portal</Text>
-        <TouchableOpacity 
-          style={styles.logoutButton}
-          onPress={handleLogout}
-        >
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
-      </View>
-
-=======
->>>>>>> 0196576 (Major update: Initial commit)
       <ScrollView 
         style={styles.scrollContent}
         contentContainerStyle={styles.scrollContentContainer}
       >
-<<<<<<< HEAD
-        {/* Status Card */}
-        <View style={styles.statusCard}>
-          <View style={styles.statusHeader}>
-            <Text style={styles.cardTitle}>Your Status</Text>
-          </View>
-
-          <View style={styles.statusContent}>
-            <View style={styles.statusIndicator}>
-              <View style={[
-                styles.statusDot,
-                { backgroundColor: isOnline ? '#4CAF50' : '#FF5252' }
-              ]} />
-              <Text style={styles.statusLabel}>
-                {isOnline ? 'Online & Available' : 'Offline'}
-              </Text>
-            </View>
-
-            <View style={styles.toggleContainer}>
-              <Text style={styles.toggleLabel}>
-                {isOnline ? 'Turn Off' : 'Go Online'}
-              </Text>
-              <Switch 
-                value={isOnline} 
-                onValueChange={setIsOnline}
-                trackColor={{ false: '#e0e0e0', true: '#81c784' }}
-                thumbColor={isOnline ? '#4CAF50' : '#ffffff'}
-                style={styles.toggle}
-              />
-            </View>
-
-            {isOnline && (
-              <View style={styles.onlineInfo}>
-                <Text style={styles.infoText}>✓ You're ready to accept rides</Text>
-              </View>
-            )}
-          </View>
-        </View>
-=======
->>>>>>> 0196576 (Major update: Initial commit)
 
         {/* Quick Stats */}
         <View style={styles.statsContainer}>

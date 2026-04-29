@@ -1,16 +1,6 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-<<<<<<< HEAD
-import AuthScreen from '../screens/AuthScreen';
-import HomeScreen from '../screens/HomeScreen';
-import TripsScreen from '../screens/TripsScreen';
-import OTPScreen from '../screens/OTPScreen';
-import SupportScreen from '../screens/SupportScreen';
-import MapScreen from '../screens/MapScreen';
-import PassengerBoardingScreen from '../screens/PassengerBoardingScreen';
-import ActiveRideScreen from '../screens/ActiveRideScreen';
-=======
 import { TouchableOpacity, View, StyleSheet } from 'react-native';
 import { supabase } from '../utils/supabase';
 
@@ -25,7 +15,6 @@ import SupportScreen from '../screens/SupportScreen';
 import PassengerBoardingScreen from '../screens/PassengerBoardingScreen';
 import ActiveRideScreen from '../screens/ActiveRideScreen';
 import DriverProfileScreen from '../screens/DriverProfileScreen';
->>>>>>> 0196576 (Major update: Initial commit)
 
 const Stack = createNativeStackNavigator();
 
@@ -38,14 +27,6 @@ export default function AppNavigator() {
           component={AuthScreen}
           options={{ headerShown: false }}
         />
-<<<<<<< HEAD
-        <Stack.Screen
-          name="Dashboard"
-          component={HomeScreen}
-          options={{ title: 'Dashboard', headerBackVisible: false }}
-        />
-        <Stack.Screen 
-=======
         
         <Stack.Screen
           name="Dashboard"
@@ -84,38 +65,10 @@ export default function AppNavigator() {
         />
 
         <Stack.Screen
->>>>>>> 0196576 (Major update: Initial commit)
           name="Rides"
           component={TripsScreen}
           options={{ title: 'Assigned Rides' }}
         />
-<<<<<<< HEAD
-        <Stack.Screen 
-          name="Support"
-          component={SupportScreen}
-          options={{ title: 'Support', headerShown: false }}
-        />
-        <Stack.Screen 
-          name="Map"
-          component={MapScreen as any}
-          options={{ title: 'Live Trip Map', headerShown: false }}
-        />
-        <Stack.Screen 
-          name="PassengerBoarding"
-          component={PassengerBoardingScreen}
-          options={{ title: 'Passenger Verification', headerShown: false }}
-        />
-        <Stack.Screen 
-          name="ActiveRide"
-          component={ActiveRideScreen}
-          options={{ title: 'Active Ride', headerShown: false }}
-        />
-        <Stack.Screen name="OTP" component={OTPScreen} options={{ title: 'Confirm Ride' }} />
-      </Stack.Navigator>
-    </NavigationContainer>
-  );
-}
-=======
 
         {/* ... rest of your screens ... */}
         <Stack.Screen name="Support" component={SupportScreen} options={{ headerShown: false }} />
@@ -139,4 +92,3 @@ const styles = StyleSheet.create({
     marginLeft: 5,
   },
 });
->>>>>>> 0196576 (Major update: Initial commit)
