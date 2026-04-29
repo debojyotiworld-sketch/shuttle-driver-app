@@ -40,7 +40,7 @@ export default function AppNavigator() {
                   onPress={() => navigation.navigate('DriverProfile')}
                   style={styles.iconButton}
                 >
-                  <MaterialIcons name="account-circle" size={28} color="#2196F3" />
+                  <MaterialIcons name="account-circle" size={28} color="#009688" />
                 </TouchableOpacity>
 
                 {/* Logout Icon */}
@@ -51,7 +51,7 @@ export default function AppNavigator() {
                   }}
                   style={styles.iconButton}
                 >
-                  <MaterialIcons name="logout" size={26} color="#F44336" />
+                  <MaterialIcons name="logout" size={26} color="#00796B" />
                 </TouchableOpacity>
               </View>
             ),

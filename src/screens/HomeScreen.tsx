@@ -60,10 +60,10 @@ export default function HomeScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F4F6F8',
   },
   header: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#00796B',
     paddingHorizontal: 16,
     paddingVertical: 14,
     flexDirection: 'row',
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: '#009688',
     marginBottom: 4,
   },
   statLabel: {
@@ -215,10 +215,10 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   ridesButton: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#009688',
   },
   supportButton: {
-    backgroundColor: '#2196F3',
+    backgroundColor: '#26A69A',
   },
   earningsButton: {
     backgroundColor: '#4CAF50',
