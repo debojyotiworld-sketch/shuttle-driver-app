@@ -2,14 +2,6 @@ import React, { useState } from 'react';
 import { View, Text, Switch, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 
 export default function HomeScreen({ navigation }: any) {
-  const [isOnline, setIsOnline] = useState(false);
-
-  const handleLogout = () => {
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Auth' }],
-    });
-  };
 
   return (
     <View style={styles.container}>
