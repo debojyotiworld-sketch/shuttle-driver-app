@@ -68,14 +68,14 @@ const InfoRow = ({ label, value }: any) => (
 );
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F5F5' },
+  container: { flex: 1, backgroundColor: '#F4F6F8' },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: { backgroundColor: '#1A1A1A', padding: 40, alignItems: 'center' },
-  imagePlaceholder: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#333', justifyContent: 'center', alignItems: 'center', marginBottom: 15, overflow: 'hidden' },
+  header: { backgroundColor: '#00796B', padding: 40, alignItems: 'center' },
+  imagePlaceholder: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#009688', justifyContent: 'center', alignItems: 'center', marginBottom: 15, overflow: 'hidden' },
   profilePic: { width: 100, height: 100 },
   initials: { color: '#FFF', fontSize: 40, fontWeight: 'bold' },
   name: { color: '#FFF', fontSize: 22, fontWeight: 'bold' },
-  status: { color: '#4CAF50', fontSize: 14, marginTop: 5, fontWeight: 'bold' },
+  status: { color: '#009688', fontSize: 14, marginTop: 5, fontWeight: 'bold' },
   infoSection: { padding: 20 },
   row: { backgroundColor: '#FFF', padding: 15, borderRadius: 10, marginBottom: 10, flexDirection: 'row', justifyContent: 'space-between', elevation: 2 },
   label: { color: '#666', fontWeight: 'bold' },

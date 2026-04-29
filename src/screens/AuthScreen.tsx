@@ -102,7 +102,7 @@ export default function AuthScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#F4F6F8',
   },
   formContainer: {
     flex: 1,
@@ -114,19 +114,21 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 30,
     textAlign: 'center',
+    color: '#00796B',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#B2DFDB',
+    backgroundColor: '#FFF',
     padding: 15,
     marginBottom: 20,
-    borderRadius: 8,
+    borderRadius: 12,
     fontSize: 16,
   },
   button: {
-    backgroundColor: 'black',
+    backgroundColor: '#009688',
     padding: 15,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: 'center',
   },
   buttonText: {

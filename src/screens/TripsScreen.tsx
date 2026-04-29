@@ -115,11 +115,11 @@ export default function TripsScreen({ navigation }: any) {
           </View>
           <View style={[
             styles.badge,
-            { backgroundColor: item.status === 'in-progress' ? '#E8F5E9' : '#E3F2FD' }
+            { backgroundColor: item.status === 'in-progress' ? '#E0F2F1' : '#E0F2F1' }
           ]}>
             <Text style={[
               styles.badgeText,
-              { color: item.status === 'in-progress' ? '#2E7D32' : '#1976D2' }
+              { color: item.status === 'in-progress' ? '#00796B' : '#009688' }
             ]}>
               {item.status.toUpperCase()}
             </Text>
@@ -171,7 +171,7 @@ export default function TripsScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F9FA' },
+  container: { flex: 1, backgroundColor: '#F4F6F8' },
   header: { padding: 20, backgroundColor: '#FFF', borderBottomWidth: 1, borderBottomColor: '#EEE' },
   headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#1A1A1A' },
   card: { backgroundColor: '#FFF', borderRadius: 16, padding: 16, marginBottom: 16, elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
   infoRow: { marginBottom: 20, borderTopWidth: 1, borderTopColor: '#F0F0F0', paddingTop: 10 },
   infoLabel: { color: '#666', fontSize: 14 },
   infoValue: { color: '#1A1A1A', fontWeight: 'bold' },
-  btn: { backgroundColor: '#1A1A1A', padding: 16, borderRadius: 12, alignItems: 'center' },
+  btn: { backgroundColor: '#009688', padding: 16, borderRadius: 12, alignItems: 'center' },
   disabledBtn: { backgroundColor: '#CCC' },
   btnText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
   helperText: { textAlign: 'center', color: '#999', fontSize: 11, marginTop: 8 },
