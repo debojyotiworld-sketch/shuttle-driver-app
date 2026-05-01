@@ -1,175 +1,90 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, SafeAreaView, StatusBar } from 'react-native';
 
-interface ActiveRideProps {
-  navigation: any;
-  route: any;
-}
+export default function ActiveRideScreen({ navigation, route }: any) {
+  // Fix: Safe destructuring with fallback to prevent 'undefined' crashes
+  const { trip } = route.params || {};
 
-export default function ActiveRideScreen({ navigation, route }: ActiveRideProps) {
-  const { trip } = route.params;
+  if (!trip) {
+    return (
+      <View style={styles.container}>
+        <Text style={{color: '#FFF'}}>Error: No Trip Data Found</Text>
+      </View>
+    );
+  }
 
   const handleCompleteRide = () => {
-    Alert.alert('Complete Ride', 'Are you sure you want to complete this ride?', [
+    Alert.alert('Complete Ride', 'Confirm passenger drop-off?', [
       { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Complete',
+        text: 'Confirm Drop-off',
         onPress: () => {
           navigation.popToTop();
-          Alert.alert('Success', 'Ride completed successfully!');
+          Alert.alert('Success', 'Trip logged as completed.');
         },
       },
     ]);
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Active Ride</Text>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" />
+      <View style={styles.headerArea}>
+        <Text style={styles.screenTitle}>Active Trip</Text>
+        <Text style={styles.screenSub}>Monitoring passenger safety</Text>
       </View>
 
       <View style={styles.content}>
         <View style={styles.statusCard}>
-          <View style={styles.statusHeader}>
+          <View style={styles.cardHeader}>
             <View>
-              <Text style={styles.statusTitle}>Trip in Progress</Text>
-              <Text style={styles.passengerName}>{trip.passenger} on Board</Text>
+              <Text style={styles.cardTag}>ON BOARD</Text>
+              <Text style={styles.passengerName}>{trip.passenger}</Text>
             </View>
-            <View style={styles.statusIndicator}>
-              <View style={styles.statusDot} />
-              <Text style={styles.statusText}>Active</Text>
+            <View style={styles.statusBadge}>
+              <View style={styles.pulseDot} />
+              <Text style={styles.statusText}>LIVE</Text>
             </View>
           </View>
 
-          <View style={styles.destinationInfo}>
-            <Text style={styles.infoLabel}>Drop-off Location</Text>
+          <View style={styles.infoBox}>
+            <Text style={styles.infoLabel}>CURRENT DESTINATION</Text>
             <Text style={styles.infoValue}>{trip.dropoffAddress}</Text>
           </View>
 
-          <View style={styles.destinationInfo}>
-            <Text style={styles.infoLabel}>Pickup Location</Text>
+          <View style={styles.infoBox}>
+            <Text style={styles.infoLabel}>ORIGIN</Text>
             <Text style={styles.infoValue}>{trip.pickupAddress}</Text>
           </View>
         </View>
-      </View>
 
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={[styles.actionButton, styles.completeButton]}
+        <TouchableOpacity 
+          style={styles.completeBtn} 
           onPress={handleCompleteRide}
         >
-          <Text style={styles.buttonText}>Complete Ride</Text>
+          <Text style={styles.btnText}>COMPLETE TRIP</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    backgroundColor: '#1a1a1a',
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#ffffff',
-  },
-  content: {
-    flex: 1,
-    padding: 16,
-    justifyContent: 'center',
-  },
-  statusCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  statusHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  statusTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
-    marginBottom: 4,
-  },
-  passengerName: {
-    fontSize: 14,
-    color: '#666',
-  },
-  statusIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  statusDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#4CAF50',
-  },
-  statusText: {
-    fontSize: 12,
-    color: '#4CAF50',
-    fontWeight: 'bold',
-  },
-  destinationInfo: {
-    backgroundColor: '#f8f8f8',
-    padding: 16,
-    borderRadius: 8,
-    borderLeftWidth: 4,
-    borderLeftColor: '#2196F3',
-    marginBottom: 12,
-  },
-  infoLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
-    textTransform: 'uppercase',
-  },
-  infoValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1a1a1a',
-  },
-  buttonContainer: {
-    padding: 16,
-    paddingBottom: 32,
-  },
-  actionButton: {
-    paddingVertical: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  completeButton: {
-    backgroundColor: '#4CAF50',
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  container: { flex: 1, backgroundColor: '#0F172A' },
+  headerArea: { paddingHorizontal: 24, paddingVertical: 24, backgroundColor: '#1E293B' },
+  screenTitle: { fontSize: 26, fontWeight: '800', color: '#FFF' },
+  screenSub: { fontSize: 13, color: '#94A3B8', fontWeight: '600', marginTop: 4 },
+  content: { flex: 1, padding: 24, justifyContent: 'space-between' },
+  statusCard: { backgroundColor: '#FFF', borderRadius: 32, padding: 24 },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24 },
+  cardTag: { fontSize: 10, fontWeight: '800', color: '#3B82F6', letterSpacing: 1 },
+  passengerName: { fontSize: 24, fontWeight: '800', color: '#0F172A', marginTop: 4 },
+  statusBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ECFDF5', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, height: 28 },
+  pulseDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#10B981', marginRight: 6 },
+  statusText: { fontSize: 10, fontWeight: '900', color: '#10B981' },
+  infoBox: { backgroundColor: '#F8FAFC', padding: 20, borderRadius: 20, marginBottom: 12 },
+  infoLabel: { fontSize: 10, color: '#64748B', fontWeight: '800', marginBottom: 4 },
+  infoValue: { fontSize: 15, fontWeight: '700', color: '#1E293B' },
+  completeBtn: { backgroundColor: '#10B981', height: 64, borderRadius: 24, justifyContent: 'center', alignItems: 'center', shadowColor: '#10B981', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 6 },
+  btnText: { color: '#FFF', fontWeight: '800', letterSpacing: 1, fontSize: 15 }
 });

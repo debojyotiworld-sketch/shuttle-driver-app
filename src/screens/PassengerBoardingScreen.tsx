@@ -1,95 +1,85 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, SafeAreaView, TouchableOpacity, StatusBar } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, StatusBar, Alert } from 'react-native';
 import { supabase } from '../utils/supabase';
+import OTPVerificationModal from '../components/OTPVerificationModal';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function PassengerBoardingScreen({ route, navigation }: any) {
-  const { tripId } = route.params || {}; // Logic check: ensuring tripId is present
+  const { tripId } = route.params || {};
   const [passengers, setPassengers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPassenger, setSelectedPassenger] = useState<any>(null);
 
   useEffect(() => { fetchPassengers(); }, []);
 
   const fetchPassengers = async () => {
     setLoading(true);
-
     try {
       const { data, error } = await supabase
         .from("bookings")
-        .select(`
-        id,
-        status,
-        pickup,
-        drop,
-        customers (
-          id,
-          name,
-          phone
-        ),
-        stops!bookings_pickup_stop_id_fkey (
-          name,
-          stop_order
-        )
-      `)
+        .select(`id, status, pickup, drop, customers (id, name, phone)`)
         .eq("trip_id", tripId)
-        .in("status", ["confirmed", "in-transit" ])
-        .order("stop_order", {
-          foreignTable: "stops",
-          ascending: true,
-        });
+        .in("status", ["confirmed", "in-transit"]);
+
+      if (error) throw error;
+      setPassengers(data || []);
+    } catch (err) { console.error(err); } finally { setLoading(false); }
+  };
+
+  const handleVerifySuccess = async (bookingId: string) => {
+    try {
+      // 1. Update the booking status in Supabase[cite: 7, 13]
+      const { error } = await supabase
+        .from('bookings')
+        .update({ status: 'in-transit' })
+        .eq('id', bookingId);
 
       if (error) throw error;
 
-      const formatted = (data || []).map((b: any) => ({
-        booking_id: b.id,
-        name: b.customers?.name || "Unknown",
-        phone: b.customers?.phone || "",
-        pickup_location: b.stops?.name || b.pickup || "N/A",
-        drop_location: b.drop || "N/A",
-        status: b.status,
-      }));
+      // 2. Close the modal
+      setSelectedPassenger(null);
 
-      setPassengers(formatted);
+      // 3. Refresh the list so the row turns green/shows "ON BOARD"[cite: 11, 13]
+      fetchPassengers();
+
+      // Logic: We DO NOT navigate to ActiveRide here
     } catch (err) {
-      console.error("Fetch passengers error:", err);
-    } finally {
-      setLoading(false);
+      Alert.alert("Error", "Failed to update boarding status");
     }
   };
 
-  const renderPassenger = ({ item }: any) => (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <View>
-          <Text style={styles.cardTag}>PASSENGER</Text>
-          <Text style={styles.name}>{item.customers?.name || 'Authorized Guest'}</Text>
+  const renderItem = ({ item, index }: any) => (
+    <TouchableOpacity
+      style={styles.row}
+      onPress={() => setSelectedPassenger(item)}
+      activeOpacity={0.7}
+    >
+      <View style={styles.rowLead}>
+        <View style={styles.indexCircle}>
+          <Text style={styles.indexText}>{index + 1}</Text>
         </View>
-        <View style={[styles.statusBadge, { backgroundColor: item.status === 'in-transit' ? '#2ECC71' : '#3B82F6' }]}>
-          <Text style={styles.statusText}>{item.status.toUpperCase()}</Text>
+        <View style={styles.textContainer}>
+          <Text style={styles.passengerName}>{item.customers?.name || 'Authorized Guest'}</Text>
+          <Text style={styles.routeText}>{item.pickup} → {item.drop}</Text>
         </View>
       </View>
 
-      <View style={styles.infoRow}>
-        <Text style={styles.infoLabel}>ROUTING</Text>
-        <Text style={styles.infoValue}>{item.pickup} → {item.drop}</Text>
+      <View style={styles.rowAction}>
+        {/* Status Badge integrated into the row */}
+        <View style={[styles.miniStatus, { backgroundColor: item.status === 'in-transit' ? '#10B981' : '#3B82F6' }]}>
+          <Text style={styles.miniStatusText}>{item.status === 'in-transit' ? 'ON BOARD' : 'READY'}</Text>
+        </View>
+        <Text style={styles.chevron}>›</Text>
       </View>
-
-      <TouchableOpacity
-        style={styles.verifyBtn}
-        onPress={() => navigation.navigate('OTP', { bookingId: item.id, passengerName: item.customers?.name })}
-      >
-        <Text style={styles.verifyBtnText}>VERIFY OTP</Text>
-      </TouchableOpacity>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
       <View style={styles.headerArea}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-        </TouchableOpacity>
         <Text style={styles.screenTitle}>Boarding List</Text>
-        <Text style={styles.screenSub}>Verify passengers for Trip #{tripId?.slice(0, 8)}</Text>
+        <Text style={styles.screenSub}>Tap a passenger to verify OTP</Text>
       </View>
 
       {loading ? (
@@ -98,9 +88,19 @@ export default function PassengerBoardingScreen({ route, navigation }: any) {
         <FlatList
           data={passengers}
           keyExtractor={(item) => item.id}
-          renderItem={renderPassenger}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={<Text style={styles.emptyText}>No passengers assigned to this trip.</Text>}
+          renderItem={renderItem}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          contentContainerStyle={styles.listContainer}
+        />
+      )}
+
+      {selectedPassenger && (
+        <OTPVerificationModal
+          visible={!!selectedPassenger}
+          passengerName={selectedPassenger.customers?.name}
+          bookingId={selectedPassenger.id}
+          onClose={() => setSelectedPassenger(null)}
+          onVerify={handleVerifySuccess}
         />
       )}
     </SafeAreaView>
@@ -108,21 +108,74 @@ export default function PassengerBoardingScreen({ route, navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0F172A' },
-  headerArea: { paddingHorizontal: 24, paddingVertical: 20, backgroundColor: '#1E293B' },
+  container: {
+    flex: 1,
+    backgroundColor: '#0F172A' // Main dark background
+  },
+  headerArea: {
+    paddingHorizontal: 24,
+    paddingVertical: 24,
+    backgroundColor: '#1E293B',
+    borderBottomWidth: 1,
+    borderBottomColor: '#334155'
+  },
   screenTitle: { fontSize: 26, fontWeight: '800', color: '#FFF' },
-  screenSub: { fontSize: 13, color: '#94A3B8', fontWeight: '600' },
-  listContent: { padding: 20, gap: 16 },
-  card: { backgroundColor: '#FFF', borderRadius: 24, padding: 20 },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
-  cardTag: { fontSize: 10, fontWeight: '800', color: '#3B82F6', letterSpacing: 1 },
-  name: { fontSize: 20, fontWeight: '800', color: '#0F172A' },
-  statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-  statusText: { color: '#FFF', fontSize: 10, fontWeight: '900' },
-  infoRow: { backgroundColor: '#F8FAFC', padding: 12, borderRadius: 12, marginBottom: 16 },
-  infoLabel: { fontSize: 10, color: '#64748B', fontWeight: '700', marginBottom: 2 },
-  infoValue: { fontSize: 14, fontWeight: '600', color: '#1E293B' },
-  verifyBtn: { backgroundColor: '#0F172A', height: 48, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  verifyBtnText: { color: '#FFF', fontWeight: '800', fontSize: 13, letterSpacing: 1 },
-  emptyText: { textAlign: 'center', marginTop: 100, color: '#94A3B8', fontSize: 14 }
+  screenSub: { fontSize: 13, color: '#94A3B8', fontWeight: '600', marginTop: 4 },
+
+  listContainer: {
+    padding: 16 // Added padding so rows don't touch edges
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#1E293B', // Slightly lighter than background to stand out[cite: 3]
+    borderRadius: 16,
+    marginBottom: 12, // Space between rows[cite: 13]
+    borderWidth: 1,
+    borderColor: '#334155' // Subtle border for definition
+  },
+  rowLead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1
+  },
+  textContainer: {
+    flex: 1
+  },
+  indexCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#334155',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  indexText: { color: '#FFF', fontSize: 12, fontWeight: '800' },
+  passengerName: { color: '#FFF', fontSize: 16, fontWeight: '700' },
+  routeText: { color: '#94A3B8', fontSize: 12, marginTop: 2 },
+
+  rowAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12
+  },
+  miniStatus: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  miniStatusText: {
+    color: '#FFF',
+    fontSize: 9,
+    fontWeight: '900',
+  },
+  chevron: {
+    color: '#334155',
+    fontSize: 20,
+    fontWeight: 'bold'
+  },
+  separator: { height: 1, backgroundColor: '#1E293B', marginLeft: 68 }
 });

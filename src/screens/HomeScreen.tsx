@@ -5,10 +5,10 @@ import {
   StyleSheet, 
   TouchableOpacity, 
   ScrollView, 
-  StatusBar, 
-  SafeAreaView 
+  StatusBar
 } from 'react-native';
 import { supabase } from '../utils/supabase';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen({ navigation }: any) {
   const [isOnline, setIsOnline] = useState(false);

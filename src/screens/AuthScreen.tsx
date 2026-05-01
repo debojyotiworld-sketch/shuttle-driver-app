@@ -106,6 +106,11 @@ export default function AuthScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
       </View>
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>
+          Powered by <Text style={styles.companyText}>Unbroken Technologies</Text>
+        </Text>
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -142,6 +147,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 2,
     marginTop: 4,
+  },
+  footer: {
+    paddingBottom: 24, // Spacing from the bottom of the screen[cite: 18]
+    alignItems: 'center',
+  },
+  footerText: {
+    fontSize: 12,
+    color: '#64748B', // Muted slate color[cite: 18]
+    fontWeight: '500',
+    letterSpacing: 0.5,
+  },
+  companyText: {
+    color: '#94A3B8', // Slightly brighter highlight for the company name[cite: 18]
+    fontWeight: '700',
   },
   inputSection: {
     gap: 20,
