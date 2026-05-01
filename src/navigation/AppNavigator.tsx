@@ -21,60 +21,20 @@ const Stack = createNativeStackNavigator();
 export default function AppNavigator() {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Auth">
-        <Stack.Screen
-          name="Auth"
-          component={AuthScreen}
-          options={{ headerShown: false }}
-        />
-        
-        <Stack.Screen
-          name="Dashboard"
-          component={HomeScreen}
-          options={({ navigation }) => ({
-            headerTitle: 'Dashboard',
-            headerRight: () => (
-              <View style={styles.headerRightContainer}>
-                {/* Profile Icon */}
-                <TouchableOpacity
-                  onPress={() => navigation.navigate('DriverProfile')}
-                  style={styles.iconButton}
-                >
-                  <MaterialIcons name="account-circle" size={28} color="#009688" />
-                </TouchableOpacity>
-
-                {/* Logout Icon */}
-                <TouchableOpacity
-                  onPress={async () => {
-                    await supabase.auth.signOut();
-                    navigation.replace('Auth');
-                  }}
-                  style={styles.iconButton}
-                >
-                  <MaterialIcons name="logout" size={26} color="#00796B" />
-                </TouchableOpacity>
-              </View>
-            ),
-          })}
-        />
-
-        <Stack.Screen
-          name="DriverProfile"
-          component={DriverProfileScreen}
-          options={{ title: 'My Profile' }}
-        />
-
-        <Stack.Screen
-          name="Rides"
-          component={TripsScreen}
-        />
-
-        {/* ... rest of your screens ... */}
-        <Stack.Screen name="Support" component={SupportScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="PassengerBoarding" component={PassengerBoardingScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="ActiveRide" component={ActiveRideScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="OTP" component={PassengerBoardingScreen} />
-        
+      <Stack.Navigator 
+        initialRouteName="Auth"
+        screenOptions={{ 
+          headerShown: false, // Global removal of the nasty default headers
+          animation: 'fade' 
+        }}
+      >
+        <Stack.Screen name="Auth" component={AuthScreen} />
+        <Stack.Screen name="Dashboard" component={HomeScreen} />
+        <Stack.Screen name="DriverProfile" component={DriverProfileScreen} />
+        <Stack.Screen name="Rides" component={TripsScreen} />
+        <Stack.Screen name="Support" component={SupportScreen} />
+        <Stack.Screen name="PassengerBoarding" component={PassengerBoardingScreen} />
+        <Stack.Screen name="ActiveRide" component={ActiveRideScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
