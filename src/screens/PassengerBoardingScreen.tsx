@@ -9,7 +9,7 @@ import {
   StatusBar, 
   Alert 
 } from 'react-native';
-import { supabase } from '../utils/supabaseClient';
+import { supabase } from '../utils/supabase';
 import OTPVerificationModal from '../components/OTPVerificationModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 

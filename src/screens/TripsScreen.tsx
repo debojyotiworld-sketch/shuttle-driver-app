@@ -91,17 +91,14 @@ export default function TripsScreen({ navigation }: any) {
 
     if (Platform.OS === 'android') {
       try {
-        const granted = await PermissionsAndroid.request(
+        const granted = await PermissionsAndroid.requestMultiple([
           PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-          {
-            title: "Location Permission",
-            message: "Rydon needs your location to provide real-time trip updates.",
-            buttonNeutral: "Ask Me Later",
-            buttonNegative: "Cancel",
-            buttonPositive: "OK"
-          }
+          PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
+        ]);
+        return (
+          granted[PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION] === PermissionsAndroid.RESULTS.GRANTED ||
+          granted[PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION] === PermissionsAndroid.RESULTS.GRANTED
         );
-        return granted === PermissionsAndroid.RESULTS.GRANTED;
       } catch (err) {
         return false;
       }
@@ -110,28 +107,32 @@ export default function TripsScreen({ navigation }: any) {
   };
 
   const recordLocation = async (tripId: string) => {
-    Geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude, speed } = position.coords;
-        
-        // Insert into your trip_locations table[cite: 1]
-        const { error } = await supabase
-          .from('trip_locations')
-          .insert({
-            trip_id: tripId,
-            latitude,
-            longitude,
-            speed_kmh: (speed || 0) * 3.6, // Convert m/s to km/h
-            recorded_at: new Date().toISOString()
-          });
+    try {
+      Geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude, speed } = position.coords;
 
-        if (error) console.error('Database Sync Error:', error.message);
-      },
-      (error) => {
-        console.error('Location Fetch Error:', error.code, error.message);
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
-    );
+          // Insert into your trip_locations table[cite: 1]
+          const { error } = await supabase
+            .from('trip_locations')
+            .insert({
+              trip_id: tripId,
+              latitude,
+              longitude,
+              speed_kmh: (speed || 0) * 3.6, // Convert m/s to km/h
+              recorded_at: new Date().toISOString()
+            });
+
+          if (error) console.error('Database Sync Error:', error.message);
+        },
+        (error) => {
+          console.error('Location Fetch Error:', error.code, error.message);
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+      );
+    } catch (error) {
+      console.error('Geolocation Error:', error);
+    }
   };
 
   const startTracking = async (tripId: string) => {
