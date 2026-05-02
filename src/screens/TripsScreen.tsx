@@ -100,6 +100,7 @@ export default function TripsScreen({ navigation }: any) {
           granted[PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION] === PermissionsAndroid.RESULTS.GRANTED
         );
       } catch (err) {
+        console.error('Permission Request Error:', err);
         return false;
       }
     }
