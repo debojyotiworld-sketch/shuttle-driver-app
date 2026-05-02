@@ -1,11 +1,7 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { TouchableOpacity, View, StyleSheet } from 'react-native';
-import { supabase } from '../utils/supabase';
-
-// Import Icons
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { StyleSheet } from 'react-native';
 
 // Import Screens
 import AuthScreen from '../screens/AuthScreen';
@@ -40,7 +36,7 @@ export default function AppNavigator() {
   );
 }
 
-const styles = StyleSheet.create({
+/* const styles = StyleSheet.create({
   headerRightContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -50,4 +46,4 @@ const styles = StyleSheet.create({
     padding: 8,
     marginLeft: 5,
   },
-});
+}); */

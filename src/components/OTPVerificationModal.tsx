@@ -31,18 +31,18 @@ export default function OTPVerificationModal({ visible, onClose, passengerName, 
           
           <TextInput
             style={styles.input}
-            placeholder="0000"
+            placeholder="00000"
             placeholderTextColor="#64748B"
             keyboardType="number-pad"
-            maxLength={4}
+            maxLength={5}
             value={otp}
             onChangeText={setOtp}
           />
 
           <TouchableOpacity 
-            style={[styles.btn, otp.length < 4 && styles.btnDisabled]} 
+            style={[styles.btn, otp.length < 5 && styles.btnDisabled]} 
             onPress={handleVerify}
-            disabled={otp.length < 4 || verifying}
+            disabled={otp.length < 5 || verifying}
           >
             {verifying ? <ActivityIndicator color="#FFF" /> : <Text style={styles.btnText}>VERIFY & BOARD</Text>}
           </TouchableOpacity>
