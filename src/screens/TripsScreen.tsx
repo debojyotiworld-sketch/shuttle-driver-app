@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Geolocation from 'react-native-geolocation-service';
+import { activateKeepAwake, deactivateKeepAwake } from '@sayem314/react-native-keep-awake';
 import { supabase } from '../utils/supabase';
 import TripPassengers from '../components/TripPassengers';
 
@@ -32,6 +33,7 @@ export default function TripsScreen({ navigation }: any) {
   const [trips, setTrips] = useState<TripData[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'today' | 'upcoming' | 'completed'>('today');
 
   // Using ReturnType to avoid NodeJS namespace errors in React Native
   const trackingInterval = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -68,7 +70,7 @@ export default function TripsScreen({ navigation }: any) {
       }));
 
       setTrips(formattedTrips);
-    } catch (err: any) {
+    } catch {
       Alert.alert('System Error', 'Unable to sync trip queue.');
     } finally {
       setRefreshing(false);
@@ -96,60 +98,59 @@ export default function TripsScreen({ navigation }: any) {
           granted[PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION] === PermissionsAndroid.RESULTS.GRANTED ||
           granted[PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION] === PermissionsAndroid.RESULTS.GRANTED
         );
-      } catch (err) {
-        console.error('Permission Request Error:', err);
+      } catch (_err) {
+        console.error('Permission Request Error:', _err);
         return false;
       }
     }
     return false;
   };
 
-  const recordLocation = async (tripId: string) => {
+
+    const startTracking = async (tripId: string) => {
+    activateKeepAwake();
+    stopTracking(); // clear existing
+
     try {
-      Geolocation.getCurrentPosition(
+      trackingInterval.current = Geolocation.watchPosition(
         async (position) => {
           const { latitude, longitude, speed } = position.coords;
 
-          // Insert into your trip_locations table[cite: 1]
-          const { error } = await supabase
-            .from('trip_locations')
-            .insert({
-              trip_id: tripId,
-              latitude,
-              longitude,
-              speed_kmh: (speed || 0) * 3.6, // Convert m/s to km/h
-              recorded_at: new Date().toISOString()
-            });
+          try {
+            const { error } = await supabase
+              .from('trip_locations')
+              .insert({
+                trip_id: tripId,
+                latitude,
+                longitude,
+                speed_kmh: (speed || 0) * 3.6,
+                recorded_at: new Date().toISOString()
+              });
 
-          if (error) console.error('Database Sync Error:', error.message);
+            if (error) console.error('Database Sync Error:', error.message);
+          } catch {
+            console.error('Location sync failed');
+          }
         },
-        (error) => {
-          console.error('Location Fetch Error:', error.code, error.message);
+        (_error) => {
+          // ignore error
         },
-        { enableHighAccuracy: false, timeout: 15000, maximumAge: 10000 }
-      );
-    } catch (error) {
-      console.error('Geolocation Error:', error);
+        {
+          enableHighAccuracy: true,
+          distanceFilter: 10,
+          interval: 5000,
+          fastestInterval: 2000
+        }
+      ) as any;
+    } catch { // ignore
+      console.error('Failed to start location watch');
     }
   };
 
-  const startTracking = async (tripId: string) => {
-    // Stop any existing tracking first to prevent duplicates
-    stopTracking();
-
-    setTimeout(() => {
-      recordLocation(tripId);
-    }, 1500);
-
-    // Set 5-minute interval (300,000 ms)[cite: 1]
-    trackingInterval.current = setInterval(() => {
-      recordLocation(tripId);
-    }, 300000);
-  };
-
   const stopTracking = () => {
-    if (trackingInterval.current) {
-      clearInterval(trackingInterval.current);
+    deactivateKeepAwake();
+    if (trackingInterval.current !== null) {
+      Geolocation.clearWatch(trackingInterval.current as any);
       trackingInterval.current = null;
     }
   };
@@ -242,11 +243,11 @@ export default function TripsScreen({ navigation }: any) {
             <Text style={styles.cardTag}>{inProgress ? 'ACTIVE NOW' : 'NEXT ASSIGNMENT'}</Text>
             <Text style={styles.routeName}>{item.routes?.name || 'Standard Route'}</Text>
           </View>
-          <View style={{ alignItems: 'flex-end', gap: 8 }}>
+          <View style={styles.cardHeaderRight}>
             <TouchableOpacity onPress={() => setSelectedTripId(item.id)} style={styles.viewBtn}>
               <Text style={styles.viewText}>MANIFEST</Text>
             </TouchableOpacity>
-            <View style={[styles.statusBadge, { backgroundColor: inProgress ? '#2ECC71' : '#334155' }]}>
+            <View style={[styles.statusBadge, inProgress ? styles.statusBadgeActive : styles.statusBadgeInactive]}>
               <Text style={styles.statusText}>{item.status.toUpperCase()}</Text>
             </View>
           </View>
@@ -271,13 +272,13 @@ export default function TripsScreen({ navigation }: any) {
             style={[
               styles.actionBtn,
               styles.flexBtn,
-              inProgress ? { backgroundColor: '#10B981' } : styles.btnOutline,
+              inProgress ? styles.btnActive : styles.btnOutline,
               !canInteract && styles.btnDisabled
             ]}
             onPress={() => handleTripAction(item)}
             disabled={!canInteract}
           >
-            <Text style={[styles.btnText, !inProgress && { color: '#0F172A' }]}>
+            <Text style={[styles.btnText, !inProgress && styles.btnTextDark]}>
               {inProgress ? 'COMPLETE TRIP' : 'START TRIP'}
             </Text>
           </TouchableOpacity>
@@ -295,6 +296,25 @@ export default function TripsScreen({ navigation }: any) {
     );
   };
 
+
+  const filteredTrips = trips.filter(trip => {
+    const isCompleted = trip.status === 'completed' || trip.status === 'cancelled';
+    if (activeTab === 'completed') return isCompleted;
+
+    // Not completed logic
+    if (isCompleted) return false;
+
+    // Let's assume today means created_at is today
+    const tripDate = new Date(trip.created_at);
+    const today = new Date();
+    const isToday = tripDate.toDateString() === today.toDateString();
+
+    if (activeTab === 'today') return isToday;
+    if (activeTab === 'upcoming') return !isToday && tripDate > today;
+
+    return true;
+  });
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle="light-content" />
@@ -303,8 +323,21 @@ export default function TripsScreen({ navigation }: any) {
         <Text style={styles.screenSub}>Manage your logistical queue</Text>
       </View>
 
+
+      <View style={styles.tabContainer}>
+        <TouchableOpacity style={[styles.tabBtn, activeTab === 'today' && styles.tabBtnActive]} onPress={() => setActiveTab('today')}>
+          <Text style={[styles.tabText, activeTab === 'today' && styles.tabTextActive]}>Today</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.tabBtn, activeTab === 'upcoming' && styles.tabBtnActive]} onPress={() => setActiveTab('upcoming')}>
+          <Text style={[styles.tabText, activeTab === 'upcoming' && styles.tabTextActive]}>Upcoming</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.tabBtn, activeTab === 'completed' && styles.tabBtnActive]} onPress={() => setActiveTab('completed')}>
+          <Text style={[styles.tabText, activeTab === 'completed' && styles.tabTextActive]}>Completed</Text>
+        </TouchableOpacity>
+      </View>
+
       <FlatList
-        data={trips}
+        data={filteredTrips}
         keyExtractor={(t) => t.id}
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
@@ -336,10 +369,21 @@ const styles = StyleSheet.create({
   headerArea: { paddingHorizontal: 24, paddingVertical: 20, backgroundColor: '#1E293B' },
   screenTitle: { fontSize: 26, fontWeight: '800', color: '#FFF' },
   screenSub: { fontSize: 13, color: '#94A3B8', fontWeight: '600', marginTop: 2 },
+
+  tabContainer: { flexDirection: 'row', backgroundColor: '#FFFFFF', paddingHorizontal: 24, paddingBottom: 10, borderBottomWidth: 1, borderColor: '#E0E0E0' },
+  tabBtn: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, marginRight: 8, backgroundColor: '#F4F6F8' },
+  tabBtnActive: { backgroundColor: '#009688' },
+  tabText: { fontSize: 12, fontWeight: '700', color: '#666666' },
+  tabTextActive: { color: '#FFFFFF' },
   listContent: { padding: 20, gap: 16 },
   card: { backgroundColor: '#FFF', borderRadius: 24, padding: 24 },
   disabledCard: { backgroundColor: '#F1F5F9', opacity: 0.8 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
+  cardHeaderRight: { alignItems: 'flex-end', gap: 8 },
+  statusBadgeActive: { backgroundColor: '#2ECC71' },
+  statusBadgeInactive: { backgroundColor: '#E0E0E0' },
+  btnActive: { backgroundColor: '#10B981' },
+  btnTextDark: { color: '#333333' },
   headerLeft: { flex: 1 },
   cardTag: { fontSize: 10, fontWeight: '800', color: '#3B82F6', letterSpacing: 1, marginBottom: 4 },
   routeName: { fontSize: 20, fontWeight: '800', color: '#0F172A' },

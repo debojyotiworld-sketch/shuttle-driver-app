@@ -29,7 +29,7 @@ export default function AuthScreen({ navigation }: any) {
     });
 
     return () => listener.subscription.unsubscribe();
-  }, []);
+  }, [navigation]);
 
   const handleAuth = async () => {
     if (!email || !password) {

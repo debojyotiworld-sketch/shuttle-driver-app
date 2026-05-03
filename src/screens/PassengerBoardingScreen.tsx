@@ -19,16 +19,8 @@ export default function PassengerBoardingScreen({ route, navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [selectedPassenger, setSelectedPassenger] = useState<any>(null);
 
-  useEffect(() => { 
-    if (tripId) {
-      fetchPassengers(); 
-    } else {
-      Alert.alert("Error", "No Trip ID provided.");
-      navigation.goBack();
-    }
-  }, [tripId]);
 
-  const fetchPassengers = async () => {
+  const fetchPassengers = React.useCallback(async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -45,12 +37,21 @@ export default function PassengerBoardingScreen({ route, navigation }: any) {
 
       if (error) throw error;
       setPassengers(data || []);
-    } catch (err: any) { 
+    } catch {
       Alert.alert("Sync Error", "Could not load the passenger manifest.");
     } finally { 
       setLoading(false); 
     }
-  };
+  }, [tripId]);
+
+  useEffect(() => {
+    if (tripId) {
+      fetchPassengers();
+    } else {
+      Alert.alert("Error", "No Trip ID provided.");
+      navigation.goBack();
+    }
+  }, [tripId, navigation, fetchPassengers]);
 
   const handleVerifySuccess = async (bookingId: string) => {
     try {
@@ -64,7 +65,7 @@ export default function PassengerBoardingScreen({ route, navigation }: any) {
       setSelectedPassenger(null);
       fetchPassengers(); // Refresh list to update status UI[cite: 13]
 
-    } catch (err) {
+    } catch {
       Alert.alert("Error", "Failed to update boarding status.");
     }
   };
@@ -101,7 +102,7 @@ export default function PassengerBoardingScreen({ route, navigation }: any) {
         <View style={styles.rowAction}>
           <View style={[
             styles.miniStatus, 
-            { backgroundColor: isBoarded ? '#10B981' : '#3B82F6' }
+            isBoarded ? styles.miniStatusBoarded : styles.miniStatusReady
           ]}>
             <Text style={styles.miniStatusText}>
               {isBoarded ? 'ON BOARD' : 'READY'}
@@ -126,7 +127,7 @@ export default function PassengerBoardingScreen({ route, navigation }: any) {
       </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#3B82F6" style={{ marginTop: 50 }} />
+        <ActivityIndicator size="large" color="#3B82F6" style={styles.emptyContainerSpaced} />
       ) : (
         <FlatList
           data={passengers}
@@ -179,21 +180,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', 
     alignItems: 'center', 
     padding: 16, 
-    backgroundColor: '#1E293B', 
     borderRadius: 16, 
     marginBottom: 12, 
     borderWidth: 1, 
-    borderColor: '#334155' 
   },
   rowLead: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   textContainer: { flex: 1 },
   indexCircle: { 
     width: 32, 
     height: 32, 
-    borderRadius: 16, 
-    backgroundColor: '#334155', 
-    justifyContent: 'center', 
-    alignItems: 'center' 
   },
   indexText: { color: '#FFF', fontSize: 12, fontWeight: '800' },
   passengerName: { color: '#FFF', fontSize: 16, fontWeight: '700' },
@@ -203,6 +198,9 @@ const styles = StyleSheet.create({
   miniStatusText: { color: '#FFF', fontSize: 9, fontWeight: '900' },
   chevron: { color: '#334155', fontSize: 20, fontWeight: 'bold' },
   emptyContainer: { marginTop: 100, alignItems: 'center' },
+  miniStatusBoarded: { backgroundColor: '#10B981' },
+  miniStatusReady: { backgroundColor: '#3B82F6' },
+  emptyContainerSpaced: { marginTop: 50 },
   emptyText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
   footerBranding: { paddingBottom: 20, alignItems: 'center' },
   footerText: { fontSize: 11, color: '#64748B', fontWeight: '500' },

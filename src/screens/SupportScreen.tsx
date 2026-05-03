@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -30,7 +30,7 @@ const ISSUE_TYPES = [
   { label: 'Other', value: 'other' },
 ];
 
-export default function SupportScreen({ navigation }: { navigation: any }) {
+export default function SupportScreen({ navigation: _navigation }: { navigation: any }) {
   const [issueType, setIssueType] = useState('');
   const [description, setDescription] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -139,7 +139,7 @@ export default function SupportScreen({ navigation }: { navigation: any }) {
             <View key={ticket.id} style={styles.ticketItem}>
               <View style={styles.ticketHeader}>
                 <Text style={styles.ticketType}>{ticket.issueType.toUpperCase()}</Text>
-                <View style={[styles.statusBadge, { backgroundColor: ticket.status === 'resolved' ? '#2ECC71' : '#3B82F6' }]}>
+                <View style={[styles.statusBadge, ticket.status === 'resolved' ? styles.statusBadgeResolved : styles.statusBadgeOpen]}>
                   <Text style={styles.statusText}>{ticket.status}</Text>
                 </View>
               </View>
@@ -197,6 +197,8 @@ const styles = StyleSheet.create({
   ticketHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   ticketType: { color: '#94A3B8', fontSize: 10, fontWeight: '900' },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  statusBadgeResolved: { backgroundColor: '#2ECC71' },
+  statusBadgeOpen: { backgroundColor: '#009688' },
   statusText: { color: '#FFF', fontSize: 10, fontWeight: '800', textTransform: 'uppercase' },
   ticketDesc: { color: '#FFF', fontSize: 14, fontWeight: '500', marginBottom: 8 },
   ticketDate: { color: '#64748B', fontSize: 11, fontWeight: '600' },
