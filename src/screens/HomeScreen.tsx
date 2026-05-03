@@ -35,10 +35,10 @@ export default function HomeScreen({ navigation }: any) {
             onPress={() => setIsOnline(!isOnline)}
             style={[
               styles.statusToggle, 
-              { backgroundColor: isOnline ? '#00C853' : '#334155' }
+              isOnline ? styles.bgOnline : styles.bgOffline
             ]}
           >
-            <View style={[styles.dot, { backgroundColor: isOnline ? '#FFF' : '#94A3B8' }]} />
+            <View style={[styles.dot, isOnline ? styles.bgDark : styles.bgLight]} />
             <Text style={styles.toggleText}>{isOnline ? 'ONLINE' : 'OFFLINE'}</Text>
           </TouchableOpacity>
 
@@ -63,7 +63,7 @@ export default function HomeScreen({ navigation }: any) {
           </TouchableOpacity>
           <View style={styles.menuDivider} />
           <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
-            <Text style={[styles.menuItemText, { color: '#EF4444' }]}>🚪 Logout</Text>
+            <Text style={[styles.menuItemText, styles.textError]}>🚪 Logout</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -157,6 +157,10 @@ const styles = StyleSheet.create({
   },
   menuItem: { padding: 16 },
   menuItemText: { color: '#FFF', fontWeight: '700', fontSize: 14 },
+  bgOnline: { backgroundColor: '#00C853' },
+  bgOffline: { backgroundColor: '#334155' },
+  bgDark: { backgroundColor: '#FFF' },
+  bgLight: { backgroundColor: '#94A3B8' },
   menuDivider: { height: 1, backgroundColor: '#334155' },
 
   content: { padding: 20 },
@@ -176,4 +180,5 @@ const styles = StyleSheet.create({
   supportButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#1E293B', padding: 18, borderRadius: 16, borderWidth: 1, borderColor: '#334155', gap: 12 },
   supportEmoji: { fontSize: 18 },
   supportText: { color: '#FFF', fontSize: 16, fontWeight: '600' },
+  textError: { color: '#EF4444' }
 });

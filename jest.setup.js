@@ -37,3 +37,9 @@ jest.mock('react-native-maps', () => {
     UrlTile: (props) => React.createElement('UrlTile', props, props.children),
   };
 });
+// Mock react-native-keep-awake
+jest.mock('@sayem314/react-native-keep-awake', () => ({
+  activateKeepAwake: jest.fn(),
+  deactivateKeepAwake: jest.fn(),
+  useKeepAwake: jest.fn(),
+}));

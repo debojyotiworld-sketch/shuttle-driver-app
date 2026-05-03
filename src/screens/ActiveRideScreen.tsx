@@ -8,7 +8,7 @@ export default function ActiveRideScreen({ navigation, route }: any) {
   if (!trip) {
     return (
       <View style={styles.container}>
-        <Text style={{color: '#FFF'}}>Error: No Trip Data Found</Text>
+        <Text style={styles.errorText}>Error: No Trip Data Found</Text>
       </View>
     );
   }
@@ -71,6 +71,7 @@ export default function ActiveRideScreen({ navigation, route }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0F172A' },
+  errorText: { color: '#FFF' },
   headerArea: { paddingHorizontal: 24, paddingVertical: 24, backgroundColor: '#1E293B' },
   screenTitle: { fontSize: 26, fontWeight: '800', color: '#FFF' },
   screenSub: { fontSize: 13, color: '#94A3B8', fontWeight: '600', marginTop: 4 },

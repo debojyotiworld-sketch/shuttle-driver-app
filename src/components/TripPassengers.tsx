@@ -6,11 +6,8 @@ export default function TripPassengers({ visible, onClose, tripId }: any) {
   const [passengers, setPassengers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (visible && tripId) fetchPassengers();
-  }, [visible, tripId]);
 
-  const fetchPassengers = async () => {
+  const fetchPassengers = React.useCallback(async () => {
     setLoading(true);
     try {
       // PassengerBoardingScreen এর মতো হুবহু query
@@ -47,7 +44,11 @@ export default function TripPassengers({ visible, onClose, tripId }: any) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [tripId]);
+
+  useEffect(() => {
+    if (visible && tripId) fetchPassengers();
+  }, [visible, tripId, fetchPassengers]);
 
   const renderItem = ({ item, index }: any) => (
     <View style={styles.row}>
@@ -75,7 +76,7 @@ export default function TripPassengers({ visible, onClose, tripId }: any) {
           </View>
 
           {loading ? (
-            <ActivityIndicator color="#3B82F6" style={{ margin: 50 }} />
+            <ActivityIndicator color="#3B82F6" style={styles.loadingSpinner} />
           ) : (
             <FlatList
               data={passengers}
@@ -129,5 +130,6 @@ const styles = StyleSheet.create({
   emptyText: { color: '#64748B', fontSize: 14, fontWeight: '600' },
   footerBranding: { marginTop: 10, paddingBottom: 10, alignItems: 'center' },
   footerText: { color: '#64748B', fontSize: 11, fontWeight: '500' },
-  companyText: { color: '#94A3B8', fontWeight: '700' }
+  companyText: { color: '#94A3B8', fontWeight: '700' },
+  loadingSpinner: { margin: 50 }
 });
