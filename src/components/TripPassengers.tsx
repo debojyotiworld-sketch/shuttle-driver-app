@@ -25,7 +25,7 @@ export default function TripPassengers({ visible, onClose, tripId }: any) {
           )
         `)
         .eq("trip_id", tripId)
-        .in("status", ["confirmed", "in-transit", "pending", "scheduled", "booked"]);
+        .in("status", ["confirmed", "in-transit", "pending", "confirmed", "booked"]);
 
       if (error) throw error;
 

@@ -118,7 +118,7 @@ export default function AuthScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A', // Navy Slate background
+    backgroundColor: '#000000', // Pure Black background
   },
   formContainer: {
     flex: 1,
@@ -138,29 +138,29 @@ const styles = StyleSheet.create({
   brandTitle: {
     fontSize: 28,
     fontWeight: '900',
-    color: '#FFF',
+    color: '#FFD700', // Yellow Branding
     letterSpacing: 4,
   },
   brandSubtitle: {
     fontSize: 12,
-    color: '#94A3B8',
+    color: '#AAAAAA', // Light slate/grey
     fontWeight: '700',
     letterSpacing: 2,
     marginTop: 4,
   },
   footer: {
-    paddingBottom: 24, // Spacing from the bottom of the screen[cite: 18]
+    paddingBottom: 24, // Spacing from the bottom of the screen
     alignItems: 'center',
   },
   footerText: {
     fontSize: 12,
-    color: '#64748B', // Muted slate color[cite: 18]
+    color: '#888888', // Muted grey
     fontWeight: '500',
     letterSpacing: 0.5,
   },
   companyText: {
-    color: '#94A3B8', // Slightly brighter highlight for the company name[cite: 18]
-    fontWeight: '700',
+    color: '#FFD700', // Yellow highlight for the company name
+    fontWeight: '800',
   },
   inputSection: {
     gap: 20,
@@ -170,30 +170,31 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 11,
-    color: '#64748B',
+    color: '#AAAAAA',
     fontWeight: '800',
     letterSpacing: 1,
+    textTransform: 'uppercase',
   },
   input: {
-    backgroundColor: '#1E293B', // Slate input background
-    color: '#FFF',
+    backgroundColor: '#111111', // Dark grey input background
+    color: '#FFFFFF', // White text
     padding: 18,
     borderRadius: 16,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#333333',
   },
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1E293B',
+    backgroundColor: '#111111',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#333333',
   },
   passwordInput: {
     flex: 1,
-    color: '#FFF',
+    color: '#FFFFFF',
     padding: 18,
     fontSize: 16,
   },
@@ -202,27 +203,30 @@ const styles = StyleSheet.create({
   },
   eyeIcon: {
     fontSize: 18,
+    color: '#888888', // Muted eye icon
   },
   button: {
-    backgroundColor: '#3B82F6', // Azure Blue primary action[cite: 3]
+    backgroundColor: '#FFD700', // Taxi Yellow primary action
     padding: 20,
     borderRadius: 16,
     alignItems: 'center',
     marginTop: 12,
-    shadowColor: '#3B82F6',
+    shadowColor: '#FFD700',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
   },
   buttonDisabled: {
-    backgroundColor: '#1E293B',
+    backgroundColor: '#222222',
     shadowOpacity: 0,
+    elevation: 0,
   },
   buttonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '800',
+    color: '#000000', // Black text on yellow button
+    fontSize: 15,
+    fontWeight: '900',
     letterSpacing: 1,
+    textTransform: 'uppercase',
   },
 });
