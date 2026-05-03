@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  FlatList, 
-  StyleSheet, 
-  TouchableOpacity, 
-  Alert, 
-  RefreshControl, 
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  RefreshControl,
   StatusBar,
   PermissionsAndroid,
-  Platform 
+  Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Geolocation from 'react-native-geolocation-service';
@@ -30,21 +30,14 @@ interface TripData {
 
 export default function TripsScreen({ navigation }: any) {
   const [trips, setTrips] = useState<TripData[]>([]);
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
-  
+
   // Using ReturnType to avoid NodeJS namespace errors in React Native
   const trackingInterval = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
-    fetchTrips();
-    return () => stopTracking(); // Cleanup on unmount[cite: 1]
-  }, []);
-
   const fetchTrips = async () => {
     try {
-      setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
@@ -61,27 +54,31 @@ export default function TripsScreen({ navigation }: any) {
         .select(`
           *,
           routes (id, name),
-          bookings(count) 
+          bookings(*) 
         `)
         .eq('driver_id', driver.id)
-        .in('status', ['scheduled', 'in-progress']) 
+        .in('status', ['scheduled', 'in-progress'])
         .order('created_at', { ascending: true });
 
       if (error) throw error;
 
       const formattedTrips = (data || []).map(trip => ({
         ...trip,
-        passenger_count: trip.bookings?.[0]?.count || 0
+        passenger_count: trip.bookings?.length || 0
       }));
 
       setTrips(formattedTrips);
     } catch (err: any) {
       Alert.alert('System Error', 'Unable to sync trip queue.');
     } finally {
-      setLoading(false);
       setRefreshing(false);
     }
   };
+
+  useEffect(() => {
+    fetchTrips();
+    return () => stopTracking(); // Cleanup on unmount[cite: 1]
+  }, []);
 
   const requestLocationPermission = async () => {
     if (Platform.OS === 'ios') {
@@ -129,7 +126,7 @@ export default function TripsScreen({ navigation }: any) {
         (error) => {
           console.error('Location Fetch Error:', error.code, error.message);
         },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+        { enableHighAccuracy: false, timeout: 15000, maximumAge: 10000 }
       );
     } catch (error) {
       console.error('Geolocation Error:', error);
@@ -140,8 +137,9 @@ export default function TripsScreen({ navigation }: any) {
     // Stop any existing tracking first to prevent duplicates
     stopTracking();
 
-    // Initial ping
-    recordLocation(tripId);
+    setTimeout(() => {
+      recordLocation(tripId);
+    }, 1500);
 
     // Set 5-minute interval (300,000 ms)[cite: 1]
     trackingInterval.current = setInterval(() => {
@@ -175,7 +173,7 @@ export default function TripsScreen({ navigation }: any) {
         Alert.alert('Error', 'Failed to initialize trip.');
         return;
       }
-      
+
       startTracking(trip.id); // Trigger interval tracking[cite: 1]
       fetchTrips();
       navigation.navigate('PassengerBoarding', { tripId: trip.id });
@@ -183,14 +181,14 @@ export default function TripsScreen({ navigation }: any) {
     } else if (trip.status === 'in-progress') {
       Alert.alert('Finish Journey', 'Are you sure you want to mark this trip as completed?', [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Complete', 
+        {
+          text: 'Complete',
           onPress: async () => {
             const { error } = await supabase
               .from('trips')
               .update({ status: 'completed', ended_at: new Date().toISOString() })
               .eq('id', trip.id);
-            
+
             if (error) {
               Alert.alert('Error', 'Failed to complete trip.');
             } else {
@@ -207,8 +205,8 @@ export default function TripsScreen({ navigation }: any) {
   const handleCancelTrip = (tripId: string) => {
     Alert.alert('Cancel Assignment', 'Are you sure you want to cancel this trip?', [
       { text: 'No', style: 'cancel' },
-      { 
-        text: 'Yes, Cancel', 
+      {
+        text: 'Yes, Cancel',
         style: 'destructive',
         onPress: async () => {
           const { error } = await supabase
@@ -220,7 +218,7 @@ export default function TripsScreen({ navigation }: any) {
           } else {
             stopTracking(); // Kill timer on cancellation[cite: 1]
             fetchTrips();
-            navigation.navigate('Support'); 
+            navigation.navigate('Support');
           }
         }
       }
@@ -271,8 +269,8 @@ export default function TripsScreen({ navigation }: any) {
           <TouchableOpacity
             activeOpacity={0.8}
             style={[
-              styles.actionBtn, 
-              styles.flexBtn, 
+              styles.actionBtn,
+              styles.flexBtn,
               inProgress ? { backgroundColor: '#10B981' } : styles.btnOutline,
               !canInteract && styles.btnDisabled
             ]}
@@ -318,10 +316,10 @@ export default function TripsScreen({ navigation }: any) {
         }
       />
 
-      <TripPassengers 
-        visible={!!selectedTripId} 
-        tripId={selectedTripId} 
-        onClose={() => setSelectedTripId(null)} 
+      <TripPassengers
+        visible={!!selectedTripId}
+        tripId={selectedTripId}
+        onClose={() => setSelectedTripId(null)}
       />
 
       <View style={styles.footerBranding}>
