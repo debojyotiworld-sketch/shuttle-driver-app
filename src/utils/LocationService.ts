@@ -45,7 +45,7 @@ const locationTask = async (taskDataArguments: any) => {
                 (error) => {
                     console.log('Geolocation Error:', error.code, error.message);
                 },
-                { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000, distanceFilter: 50 }
             );
 
             // 5 minute (delay parameter) wait korbe next location fetch korar age

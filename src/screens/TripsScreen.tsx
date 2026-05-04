@@ -6,6 +6,7 @@ import {
 import { supabase } from '../utils/supabase';
 import { startTripTracking, stopTripTracking } from '../utils/LocationService'; 
 import Ionicons from 'react-native-vector-icons/Ionicons'; 
+import OTPVerificationModal from '../components/OTPVerificationModal';
 
 // Interfaces
 interface Trip {
@@ -152,7 +153,7 @@ export default function TripsScreen() {
 
   const verifyOTP = async (bookingId: string) => {
     // Basic OTP Check logic. Apni database er sathe melate paren.
-    if (otpInput.length === 4) {
+    if (otpInput.length === 5) {
       // Supabase e status update: 'in-transit' ba 'boarded'
       const { error } = await supabase
         .from('bookings')
@@ -165,7 +166,7 @@ export default function TripsScreen() {
         openManifest(selectedTripId!); // Refresh list
       }
     } else {
-      Alert.alert('Invalid OTP', 'Please enter a valid 4-digit OTP.');
+      Alert.alert('Invalid OTP', 'Please enter a valid 5-digit OTP.');
     }
   };
 
@@ -222,7 +223,17 @@ export default function TripsScreen() {
         onRefresh={fetchTrips}
         ListEmptyComponent={<Text style={styles.emptyText}>No assigned trips found.</Text>}
       />
-
+      <OTPVerificationModal 
+        visible={modalVisible} 
+        onClose={() => setModalVisible(false)} 
+        passengers={passengers} 
+        onVerify={(bookingId, inputOtp, actualPnr) => {
+            // Ekhane apnar aager verifyOTP er bhitorer logic thakbe
+            if (inputOtp.length === 5 && inputOtp === actualPnr) {
+               // supabase update etc..
+            }
+        }} 
+      />
       {/* Manifest Modal */}
       <Modal visible={modalVisible} animationType="slide" presentationStyle="pageSheet">
         <SafeAreaView style={styles.modalContainer}>
@@ -248,7 +259,7 @@ export default function TripsScreen() {
                       style={styles.otpInput}
                       placeholder="Enter OTP"
                       keyboardType="number-pad"
-                      maxLength={4}
+                      maxLength={5}
                       value={otpInput}
                       onChangeText={setOtpInput}
                     />

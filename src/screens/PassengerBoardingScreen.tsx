@@ -33,7 +33,7 @@ export default function PassengerBoardingScreen({ route, navigation }: any) {
           customers (id, name, phone)
         `)
         .eq("trip_id", tripId)
-        .in("status", ["confirmed", "in-transit", "pending", "confirmed", "booked"]);
+        .in("status", ["confirmed", "in-transit", "pending", "booked"]);
 
       if (error) throw error;
       setPassengers(data || []);

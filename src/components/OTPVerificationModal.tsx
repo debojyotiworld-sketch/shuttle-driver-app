@@ -1,70 +1,86 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Modal, SafeAreaView, FlatList, TouchableOpacity, TextInput } from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
-interface OTPProps {
-  visible: boolean;
-  onClose: () => void;
-  passengerName: string;
-  bookingId: string;
-  onVerify: (bookingId: string) => void;
+interface Booking {
+  id: string;
+  customer_id: string;
+  pickup: string;
+  drop: string;
+  booking_code: string;
+  status: string;
+  pnr: string;
 }
 
-export default function OTPVerificationModal({ visible, onClose, passengerName, bookingId, onVerify }: OTPProps) {
-  const [otp, setOtp] = useState('');
-  const [verifying, setVerifying] = useState(false);
+interface Props {
+  visible: boolean;
+  onClose: () => void;
+  passengers: Booking[];
+  onVerify: (bookingId: string, inputOtp: string, actualPnr: string) => void;
+}
 
-  const handleVerify = () => {
-    setVerifying(true);
-    setTimeout(() => {
-      setVerifying(false);
-      onVerify(bookingId);
-      setOtp('');
-    }, 1500);
-  };
+export default function OTPVerificationModal({ visible, onClose, passengers, onVerify }: Props) {
+  const [otpInput, setOtpInput] = useState('');
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={styles.container}>
-          <Text style={styles.title}>Confirm Boarding</Text>
-          <Text style={styles.subtitle}>Enter 4-digit OTP for {passengerName}</Text>
-          
-          <TextInput
-            style={styles.input}
-            placeholder="00000"
-            placeholderTextColor="#64748B"
-            keyboardType="number-pad"
-            maxLength={5}
-            value={otp}
-            onChangeText={setOtp}
-          />
-
-          <TouchableOpacity 
-            style={[styles.btn, otp.length < 5 && styles.btnDisabled]} 
-            onPress={handleVerify}
-            disabled={otp.length < 5 || verifying}
-          >
-            {verifying ? <ActivityIndicator color="#FFF" /> : <Text style={styles.btnText}>VERIFY & BOARD</Text>}
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={onClose} style={styles.cancelBtn}>
-            <Text style={styles.cancelText}>CANCEL</Text>
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
+      <SafeAreaView style={styles.modalContainer}>
+        <View style={styles.modalHeader}>
+          <Text style={styles.modalTitle}>Passenger Manifest</Text>
+          <TouchableOpacity onPress={onClose}>
+            <Ionicons name="close" size={28} color="#FFD700" />
           </TouchableOpacity>
         </View>
-      </View>
+
+        <FlatList
+          data={passengers}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <View style={styles.passengerCard}>
+              <Text style={styles.paxCode}>Booking: {item.booking_code}</Text>
+              <Text style={styles.paxRoute}>{item.pickup} ➔ {item.drop}</Text>
+              <Text style={styles.paxStatus}>Status: {item.status}</Text>
+
+              {item.status === 'confirmed' && (
+                <View style={styles.otpRow}>
+                  <TextInput
+                    style={styles.otpInput}
+                    placeholder="Enter 5-digit PNR"
+                    placeholderTextColor="#555"
+                    keyboardType="number-pad"
+                    maxLength={5}
+                    value={otpInput}
+                    onChangeText={setOtpInput}
+                  />
+                  <TouchableOpacity 
+                    style={styles.verifyBtn} 
+                    onPress={() => {
+                        onVerify(item.id, otpInput, item.pnr);
+                        setOtpInput(''); // Clear input after clicking verify
+                    }}
+                  >
+                    <Text style={styles.verifyBtnText}>Verify</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          )}
+        />
+      </SafeAreaView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.8)', justifyContent: 'flex-end' },
-  container: { backgroundColor: '#1E293B', borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 32, alignItems: 'center' },
-  title: { color: '#FFF', fontSize: 22, fontWeight: '800', marginBottom: 8 },
-  subtitle: { color: '#94A3B8', fontSize: 14, marginBottom: 32 },
-  input: { width: '100%', fontSize: 36, color: '#FFF', fontWeight: '800', textAlign: 'center', letterSpacing: 8, marginBottom: 32, backgroundColor: '#0F172A', borderRadius: 16, padding: 16 },
-  btn: { backgroundColor: '#3B82F6', width: '100%', height: 56, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-  btnDisabled: { backgroundColor: '#334155', opacity: 0.5 },
-  btnText: { color: '#FFF', fontWeight: '800', letterSpacing: 1 },
-  cancelBtn: { marginTop: 20 },
-  cancelText: { color: '#94A3B8', fontWeight: '700', fontSize: 12 }
+  modalContainer: { flex: 1, backgroundColor: '#000000' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderColor: '#333333', backgroundColor: '#111111' },
+  modalTitle: { fontSize: 20, fontWeight: '900', color: '#FFD700' },
+  passengerCard: { backgroundColor: '#111111', padding: 20, marginHorizontal: 15, marginTop: 15, borderRadius: 16, borderWidth: 1, borderColor: '#333333' },
+  paxCode: { fontWeight: '900', fontSize: 18, marginBottom: 8, color: '#FFFFFF', letterSpacing: 1 },
+  paxRoute: { color: '#AAAAAA', marginBottom: 8, fontSize: 15, fontWeight: '600' },
+  paxStatus: { color: '#FFD700', fontStyle: 'italic', marginBottom: 15, fontWeight: '700' },
+  otpRow: { flexDirection: 'row', gap: 12, marginTop: 10 },
+  otpInput: { flex: 1, borderWidth: 1, borderColor: '#FFD700', borderRadius: 12, paddingHorizontal: 15, fontSize: 20, backgroundColor: '#000000', color: '#FFFFFF', fontWeight: '700', textAlign: 'center', letterSpacing: 8 },
+  verifyBtn: { backgroundColor: '#FFD700', paddingHorizontal: 24, justifyContent: 'center', borderRadius: 12 },
+  verifyBtnText: { color: '#000000', fontWeight: '900', fontSize: 16 }
 });

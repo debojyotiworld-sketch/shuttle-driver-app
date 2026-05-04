@@ -25,11 +25,10 @@ export default function TripPassengers({ visible, onClose, tripId }: any) {
           )
         `)
         .eq("trip_id", tripId)
-        .in("status", ["confirmed", "in-transit", "pending", "confirmed", "booked"]);
+        .in("status", ["confirmed", "in-transit", "pending", "booked"]);
 
       if (error) throw error;
 
-      // BoardingScreen এর মতো Data Mapping logic[cite: 13]
       const formatted = (data || []).map((b: any) => ({
         id: b.id,
         name: b.customers?.name || "Authorized Guest",
