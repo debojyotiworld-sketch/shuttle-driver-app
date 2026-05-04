@@ -15,16 +15,16 @@ const locationTask = async (taskDataArguments: any) => {
     // Jotokkhon background service running aache, ei loop cholbe
     await new Promise(async (resolve) => {
         for (let i = 0; BackgroundService.isRunning(); i++) {
-            
+
             Geolocation.getCurrentPosition(
                 async (position) => {
                     const { latitude, longitude, speed } = position.coords;
-                    
+
                     try {
                         // Supabase e Location Insert kora
                         // Note: Ekhane trip_id dynamically anar dorkar porle AsyncStorage ba kono state manager use korte paren.
                         // Ekhonkar jonno direct insert kora hocche.
-                        
+
                         const { error } = await supabase.from('trip_locations').insert({
                             // trip_id: ACTIVE_TRIP_ID, // Active trip ID ekhane pass korben
                             latitude: latitude,
@@ -77,35 +77,58 @@ const bgServiceOptions = {
 // ==========================================
 
 export const startTripTracking = async () => {
-    // 1. Android Location Permissions Check
     if (Platform.OS === 'android') {
-        const grantedFine = await PermissionsAndroid.request(
-            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
-        );
-        const grantedCoarse = await PermissionsAndroid.request(
-            PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION
-        );
-        
-        // Android 10+ e Background Location alada bhabe nite hoy
-        if (Platform.Version >= 29) {
-             const grantedBackground = await PermissionsAndroid.request(
-                PermissionsAndroid.PERMISSIONS.ACCESS_BACKGROUND_LOCATION
-             );
-             if(grantedBackground !== PermissionsAndroid.RESULTS.GRANTED) {
-                 console.log("Background location permission denied");
-                 // Apni chaile alert dekhate paren
-             }
-        }
+        try {
+            // 1. First, request FOREGROUND permissions
+            const grantedFine = await PermissionsAndroid.request(
+                PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+                {
+                    title: "Location Permission",
+                    message: "App needs access to your location to track trips.",
+                    buttonNeutral: "Ask Me Later",
+                    buttonNegative: "Cancel",
+                    buttonPositive: "OK"
+                }
+            );
 
-        if (grantedFine !== PermissionsAndroid.RESULTS.GRANTED) {
-            console.log('Foreground location permission denied');
-            return;
+            if (grantedFine !== PermissionsAndroid.RESULTS.GRANTED) {
+                console.log('Foreground location permission denied');
+                // Return if foreground is denied, we can't do anything
+                return;
+            }
+
+            // 2. Then, request BACKGROUND permission (Only if Android >= 10)
+            if (Platform.Version >= 29) {
+                const grantedBackground = await PermissionsAndroid.request(
+                    PermissionsAndroid.PERMISSIONS.ACCESS_BACKGROUND_LOCATION,
+                    {
+                        title: "Background Location Permission",
+                        message: "App needs background location access to track trips even when the app is minimized. Please select 'Allow all the time'.",
+                        buttonNeutral: "Ask Me Later",
+                        buttonNegative: "Cancel",
+                        buttonPositive: "OK"
+                    }
+                );
+
+                if (grantedBackground !== PermissionsAndroid.RESULTS.GRANTED) {
+                    console.log("Background location permission denied");
+                    // Jodi background allow na kore, tobuo amra service start korbo
+                    // kintu screen theke berole track hobe na.
+                }
+            }
+        } catch (err) {
+            console.warn("Permission Error:", err);
+            return; // Crash thekate catch block e return kora hochhe
         }
     }
 
     try {
         console.log('Starting background location tracking...');
-        await BackgroundService.start(locationTask, bgServiceOptions);
+        if (!BackgroundService.isRunning()) {
+            await BackgroundService.start(locationTask, bgServiceOptions);
+        } else {
+            console.log('Service is already running');
+        }
     } catch (e) {
         console.log('Error starting background service', e);
     }
