@@ -1,232 +1,161 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
-  Alert,
-  Image,
-  StatusBar,
 } from 'react-native';
-import { supabase } from '../utils/supabase';
 
-export default function AuthScreen({ navigation }: any) {
+import { supabase } from '../utils/supabase';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../navigation/AppNavigator';
+
+// ✅ Navigation type
+type NavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  'Auth'
+>;
+
+export default function AuthScreen() {
+  const navigation = useNavigation<NavigationProp>();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigation.replace('Dashboard');
-    });
+  const handleLogin = async () => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) navigation.replace('Dashboard');
-    });
+      if (error) {
+        console.log('Login error:', error.message);
+        return;
+      }
 
-    return () => listener.subscription.unsubscribe();
-  }, [navigation]);
+      const user = data.user;
 
-  const handleAuth = async () => {
-    if (!email || !password) {
-      Alert.alert('Authentication Error', 'Credentials are required to access the system.');
-      return;
+      const { data: driverData, error: driverError } = await supabase
+        .from('drivers')
+        .select('*')
+        .eq('email', user?.email)
+        .single();
+
+      if (driverError || !driverData) {
+        console.log('User not found in drivers table');
+        return;
+      }
+
+      console.log('Login success:', driverData);
+
+      navigation.replace('Dashboard');
+
+    } catch (err) {
+      console.log('Unexpected error:', err);
     }
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) Alert.alert('Login Failed', error.message);
-    setLoading(false);
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <StatusBar barStyle="light-content" />
-      <View style={styles.formContainer}>
-
-        {/* Logo Section matching the Pro-Tool branding */}
-        <View style={styles.logoWrapper}>
-          <Image
-            source={{ uri: 'ic_launcher' }}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-          <Text style={styles.brandTitle}>RYDON</Text>
-          <Text style={styles.brandSubtitle}>DRIVER PORTAL</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+      >
+        <View style={styles.headerContainer}>
+          <Text style={styles.title}>Welcome Back</Text>
+          <Text style={styles.subtitle}>Enter your details to login</Text>
         </View>
 
-        <View style={styles.inputSection}>
-          <View style={styles.inputWrapper}>
-            <Text style={styles.label}>OPERATOR EMAIL</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="operator@rydon.com"
-              placeholderTextColor="#64748B"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          </View>
+        <View style={styles.formContainer}>
+          <Text style={styles.label}>Email</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="name@example.com"
+            placeholderTextColor="#9CA3AF"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
 
-          <View style={styles.inputWrapper}>
-            <Text style={styles.label}>PASSWORD</Text>
-            <View style={styles.passwordContainer}>
-              <TextInput
-                style={styles.passwordInput}
-                placeholder="••••••••"
-                placeholderTextColor="#64748B"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!isPasswordVisible}
-              />
-              <TouchableOpacity
-                onPress={() => setIsPasswordVisible(!isPasswordVisible)}
-                style={styles.eyeButton}
-              >
-                <Text style={styles.eyeIcon}>{isPasswordVisible ? '👁️' : '🔒'}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          <Text style={styles.label}>Password</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="••••••••"
+            placeholderTextColor="#9CA3AF"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+          />
 
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleAuth}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>
-              {loading ? 'AUTHENTICATING...' : 'ACCESS DASHBOARD'}
-            </Text>
+          <TouchableOpacity style={styles.button} onPress={handleLogin}>
+            <Text style={styles.buttonText}>Sign In</Text>
           </TouchableOpacity>
         </View>
-      </View>
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>
-          Powered by <Text style={styles.companyText}>Unbroken Technologies</Text>
-        </Text>
-      </View>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF', // Pure white background
+  },
   container: {
     flex: 1,
-    backgroundColor: '#000000', // Pure Black background
+    paddingHorizontal: 24,
+    justifyContent: 'center',
+  },
+  headerContainer: {
+    marginBottom: 40,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#6B7280',
   },
   formContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-  },
-  logoWrapper: {
-    alignItems: 'center',
-    marginBottom: 48,
-  },
-  logo: {
-    width: 100,
-    height: 100,
-    borderRadius: 20,
-    marginBottom: 16,
-  },
-  brandTitle: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: '#FFD700', // Yellow Branding
-    letterSpacing: 4,
-  },
-  brandSubtitle: {
-    fontSize: 12,
-    color: '#AAAAAA', // Light slate/grey
-    fontWeight: '700',
-    letterSpacing: 2,
-    marginTop: 4,
-  },
-  footer: {
-    paddingBottom: 24, // Spacing from the bottom of the screen
-    alignItems: 'center',
-  },
-  footerText: {
-    fontSize: 12,
-    color: '#888888', // Muted grey
-    fontWeight: '500',
-    letterSpacing: 0.5,
-  },
-  companyText: {
-    color: '#FFD700', // Yellow highlight for the company name
-    fontWeight: '800',
-  },
-  inputSection: {
-    gap: 20,
-  },
-  inputWrapper: {
-    gap: 8,
+    gap: 16,
   },
   label: {
-    fontSize: 11,
-    color: '#AAAAAA',
-    fontWeight: '800',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+    marginBottom: -8,
   },
   input: {
-    backgroundColor: '#111111', // Dark grey input background
-    color: '#FFFFFF', // White text
-    padding: 18,
-    borderRadius: 16,
-    fontSize: 16,
+    height: 52,
     borderWidth: 1,
-    borderColor: '#333333',
-  },
-  passwordContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#111111',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#333333',
-  },
-  passwordInput: {
-    flex: 1,
-    color: '#FFFFFF',
-    padding: 18,
-    fontSize: 16,
-  },
-  eyeButton: {
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
     paddingHorizontal: 16,
-  },
-  eyeIcon: {
-    fontSize: 18,
-    color: '#888888', // Muted eye icon
+    fontSize: 16,
+    color: '#111827',
+    backgroundColor: '#F9FAFB',
   },
   button: {
-    backgroundColor: '#FFD700', // Taxi Yellow primary action
-    padding: 20,
-    borderRadius: 16,
+    height: 52,
+    backgroundColor: '#111827', // Solid almost-black button
+    borderRadius: 8,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 12,
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  buttonDisabled: {
-    backgroundColor: '#222222',
-    shadowOpacity: 0,
-    elevation: 0,
+    marginTop: 16,
   },
   buttonText: {
-    color: '#000000', // Black text on yellow button
-    fontSize: 15,
-    fontWeight: '900',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

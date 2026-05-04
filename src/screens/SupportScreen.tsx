@@ -10,17 +10,18 @@ import {
   ActivityIndicator,
   Alert,
   StatusBar,
-  SafeAreaView
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import CustomDropdown from '../components/CustomDropdown';
+import { supabase } from '../utils/supabase';
 
-// Interface and Mock API remain consistent with your logic
 export interface SupportTicket {
   id: string;
   issueType: string;
   description: string;
   status: 'open' | 'in-progress' | 'resolved';
   createdAt: string;
+  tripId?: string;
 }
 
 const ISSUE_TYPES = [
@@ -30,133 +31,170 @@ const ISSUE_TYPES = [
   { label: 'Other', value: 'other' },
 ];
 
-export default function SupportScreen({ navigation: _navigation }: { navigation: any }) {
-  const [issueType, setIssueType] = useState('');
+export default function SupportScreen({ route }: any) {
+  const { tripId, issueType: defaultIssue } = route.params || {};
+
+  const [issueType, setIssueType] = useState(defaultIssue || '');
   const [description, setDescription] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [errors, setErrors] = useState<{ issueType?: string; description?: string }>({});
-  
-  const [previousTickets, setPreviousTickets] = useState<SupportTicket[]>([
-    { id: '1', issueType: 'trip', description: 'Driver unable to find pickup', status: 'resolved', createdAt: '2026-04-20T10:30:00Z' },
-    { id: '2', issueType: 'payment', description: 'Payment not processed', status: 'in-progress', createdAt: '2026-04-23T14:15:00Z' },
-  ]);
 
+  const [previousTickets, setPreviousTickets] = useState<SupportTicket[]>([]);
+
+  // 🔥 VALIDATION
   const validateForm = (): boolean => {
     const newErrors: typeof errors = {};
+
     if (!issueType) newErrors.issueType = 'Select an issue type';
-    if (!description.trim() || description.length < 10) newErrors.description = 'Provide at least 10 characters';
+    if (!description.trim() || description.length < 10)
+      newErrors.description = 'Provide at least 10 characters';
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  // 🔥 SUBMIT TICKET (WITH TRIP ID)
   const handleSubmit = async () => {
     if (!validateForm()) return;
+
     setIsLoading(true);
-    // Simulated API call delay
-    setTimeout(() => {
+
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData?.user;
+
+      if (!user) return;
+
+      const { error } = await supabase.from('support_tickets').insert({
+        issue_type: issueType,
+        description,
+        status: 'open',
+        trip_id: tripId || null,
+        user_email: user.email,
+      });
+
+      if (error) {
+        console.log('SUPPORT ERROR:', error);
+        Alert.alert('Error', 'Failed to submit ticket');
+        return;
+      }
+
+      // local UI update
       const newTicket: SupportTicket = {
         id: Math.random().toString(36).substr(2, 9),
         issueType,
         description,
         status: 'open',
         createdAt: new Date().toISOString(),
+        tripId,
       };
+
       setPreviousTickets([newTicket, ...previousTickets]);
+
       setShowSuccess(true);
       setIssueType('');
       setDescription('');
+
+      setTimeout(() => setShowSuccess(false), 2500);
+    } catch (err) {
+      console.log(err);
+    } finally {
       setIsLoading(false);
-      setTimeout(() => setShowSuccess(false), 3000);
-    }, 1500);
+    }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
-      
-      {/* Header Area matching Home & Trips */}
+
+      {/* HEADER */}
       <View style={styles.headerArea}>
         <Text style={styles.screenTitle}>Support Center</Text>
-        <Text style={styles.screenSub}>Report issues or get emergency help</Text>
+        <Text style={styles.screenSub}>
+          {tripId ? `Trip Support (ID: ${tripId})` : 'General Support'}
+        </Text>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        
-        {/* Emergency Utility - Redesigned as a critical card */}
-        <TouchableOpacity 
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+
+        {/* 🔥 EMERGENCY CARD */}
+        <TouchableOpacity
           style={styles.emergencyCard}
-          onPress={() => Alert.alert('Emergency Support', 'Call support now?', [{text: 'Cancel'}, {text: 'Call', style: 'destructive'}])}
+          onPress={() =>
+            Alert.alert('Emergency', 'Call support?', [
+              { text: 'Cancel' },
+              { text: 'Call', style: 'destructive' },
+            ])
+          }
         >
-          <View style={styles.emergencyHeader}>
-            <Text style={styles.emergencyTag}>CRITICAL</Text>
-            <Text style={styles.emergencyIcon}>⚠️</Text>
-          </View>
           <Text style={styles.emergencyTitle}>Emergency Assistance</Text>
-          <Text style={styles.emergencyDescription}>Immediate 24/7 priority line for active trip incidents.</Text>
+          <Text style={styles.emergencyDescription}>
+            24/7 urgent trip support line
+          </Text>
         </TouchableOpacity>
 
-        {/* Report Form */}
+        {/* 🔥 FORM */}
         <View style={styles.formCard}>
-          <Text style={styles.sectionLabel}>REPORT AN ISSUE</Text>
-          
+          <Text style={styles.sectionLabel}>REPORT ISSUE</Text>
+
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Issue Category</Text>
+            <Text style={styles.label}>Issue Type</Text>
             <CustomDropdown
               options={ISSUE_TYPES}
               value={issueType}
-              onValueChange={(val) => { setIssueType(val); setErrors({}); }}
+              onValueChange={(val) => {
+                setIssueType(val);
+                setErrors({});
+              }}
             />
-            {errors.issueType && <Text style={styles.errorText}>{errors.issueType}</Text>}
+            {errors.issueType && (
+              <Text style={styles.errorText}>{errors.issueType}</Text>
+            )}
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Detailed Description</Text>
+            <Text style={styles.label}>Description</Text>
             <TextInput
-              style={[styles.textArea, errors.description && styles.inputError]}
-              placeholder="Explain the situation..."
+              style={styles.textArea}
+              placeholder="Explain your issue..."
               placeholderTextColor="#64748B"
               multiline
               value={description}
-              onChangeText={(txt) => { setDescription(txt); setErrors({}); }}
+              onChangeText={(t) => {
+                setDescription(t);
+                setErrors({});
+              }}
             />
-            {errors.description && <Text style={styles.errorText}>{errors.description}</Text>}
+            {errors.description && (
+              <Text style={styles.errorText}>{errors.description}</Text>
+            )}
           </View>
 
-          <TouchableOpacity 
-            style={[styles.submitBtn, isLoading && styles.btnDisabled]} 
+          <TouchableOpacity
+            style={styles.submitBtn}
             onPress={handleSubmit}
             disabled={isLoading}
           >
-            {isLoading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.submitBtnText}>SUBMIT TICKET</Text>}
+            {isLoading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.submitBtnText}>SUBMIT TICKET</Text>
+            )}
           </TouchableOpacity>
         </View>
 
-        {/* Previous Tickets List */}
-        <View style={styles.historySection}>
-          <Text style={styles.sectionLabel}>TICKET HISTORY</Text>
-          {previousTickets.map((ticket) => (
-            <View key={ticket.id} style={styles.ticketItem}>
-              <View style={styles.ticketHeader}>
-                <Text style={styles.ticketType}>{ticket.issueType.toUpperCase()}</Text>
-                <View style={[styles.statusBadge, ticket.status === 'resolved' ? styles.statusBadgeResolved : styles.statusBadgeOpen]}>
-                  <Text style={styles.statusText}>{ticket.status}</Text>
-                </View>
-              </View>
-              <Text style={styles.ticketDesc} numberOfLines={2}>{ticket.description}</Text>
-              <Text style={styles.ticketDate}>{new Date(ticket.createdAt).toLocaleDateString()}</Text>
-            </View>
-          ))}
-        </View>
       </ScrollView>
 
-      {/* Success Modal matching Pro Theme */}
+      {/* 🔥 SUCCESS MODAL */}
       <Modal visible={showSuccess} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.successBox}>
             <Text style={styles.successCheck}>✓</Text>
-            <Text style={styles.successTitle}>Ticket Logged</Text>
-            <Text style={styles.successMsg}>Support will review your request shortly.</Text>
+            <Text style={styles.successTitle}>Ticket Created</Text>
+            <Text style={styles.successMsg}>
+              We will review your request shortly.
+            </Text>
           </View>
         </View>
       </Modal>
@@ -166,47 +204,72 @@ export default function SupportScreen({ navigation: _navigation }: { navigation:
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0F172A' },
-  headerArea: { paddingHorizontal: 24, paddingVertical: 20, backgroundColor: '#1E293B' },
-  screenTitle: { fontSize: 26, fontWeight: '800', color: '#FFF' },
-  screenSub: { fontSize: 13, color: '#94A3B8', fontWeight: '600', marginTop: 2 },
+
+  headerArea: { padding: 20, backgroundColor: '#1E293B' },
+  screenTitle: { fontSize: 22, fontWeight: '800', color: '#fff' },
+  screenSub: { fontSize: 13, color: '#94A3B8', marginTop: 4 },
+
   scrollContent: { padding: 20 },
-  
-  // Emergency Card
-  emergencyCard: { backgroundColor: '#7F1D1D', padding: 20, borderRadius: 24, marginBottom: 24, borderWidth: 1, borderColor: '#B91C1C' },
-  emergencyHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  emergencyTag: { color: '#FECACA', fontSize: 10, fontWeight: '900' },
-  emergencyIcon: { fontSize: 18 },
-  emergencyTitle: { color: '#FFF', fontSize: 20, fontWeight: '800', marginBottom: 4 },
-  emergencyDescription: { color: '#FCA5A5', fontSize: 13, fontWeight: '500' },
 
-  // Form
-  formCard: { backgroundColor: '#1E293B', padding: 24, borderRadius: 24, borderWidth: 1, borderColor: '#334155', marginBottom: 32 },
-  sectionLabel: { color: '#64748B', fontSize: 11, fontWeight: '800', marginBottom: 16, letterSpacing: 1 },
-  inputGroup: { marginBottom: 20 },
-  label: { color: '#94A3B8', fontSize: 12, fontWeight: '700', marginBottom: 8 },
-  textArea: { backgroundColor: '#0F172A', borderRadius: 16, padding: 16, color: '#FFF', fontSize: 15, height: 120, textAlignVertical: 'top', borderWidth: 1, borderColor: '#334155' },
-  inputError: { borderColor: '#EF4444' },
-  errorText: { color: '#EF4444', fontSize: 11, marginTop: 4, fontWeight: '600' },
-  submitBtn: { backgroundColor: '#3B82F6', height: 56, borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginTop: 8 },
-  btnDisabled: { backgroundColor: '#334155' },
-  submitBtnText: { color: '#FFF', fontWeight: '800', fontSize: 14, letterSpacing: 1 },
+  emergencyCard: {
+    backgroundColor: '#7F1D1D',
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 16,
+  },
+  emergencyTitle: { color: '#fff', fontWeight: '800', fontSize: 16 },
+  emergencyDescription: { color: '#FCA5A5', fontSize: 12, marginTop: 4 },
 
-  // History
-  historySection: { gap: 12 },
-  ticketItem: { backgroundColor: '#1E293B', padding: 20, borderRadius: 20, borderWidth: 1, borderColor: '#334155' },
-  ticketHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  ticketType: { color: '#94A3B8', fontSize: 10, fontWeight: '900' },
-  statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  statusBadgeResolved: { backgroundColor: '#2ECC71' },
-  statusBadgeOpen: { backgroundColor: '#009688' },
-  statusText: { color: '#FFF', fontSize: 10, fontWeight: '800', textTransform: 'uppercase' },
-  ticketDesc: { color: '#FFF', fontSize: 14, fontWeight: '500', marginBottom: 8 },
-  ticketDate: { color: '#64748B', fontSize: 11, fontWeight: '600' },
+  formCard: {
+    backgroundColor: '#1E293B',
+    padding: 20,
+    borderRadius: 16,
+  },
 
-  // Success Modal
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.9)', justifyContent: 'center', alignItems: 'center' },
-  successBox: { backgroundColor: '#1E293B', padding: 40, borderRadius: 32, alignItems: 'center', borderWidth: 1, borderColor: '#334155', width: '80%' },
-  successCheck: { fontSize: 48, color: '#2ECC71', marginBottom: 16 },
-  successTitle: { color: '#FFF', fontSize: 22, fontWeight: '800', marginBottom: 8 },
-  successMsg: { color: '#94A3B8', fontSize: 14, textAlign: 'center' }
+  sectionLabel: {
+    color: '#64748B',
+    fontSize: 11,
+    fontWeight: '800',
+    marginBottom: 12,
+  },
+
+  inputGroup: { marginBottom: 16 },
+  label: { color: '#94A3B8', marginBottom: 6 },
+
+  textArea: {
+    backgroundColor: '#0F172A',
+    borderRadius: 12,
+    padding: 12,
+    color: '#fff',
+    height: 100,
+  },
+
+  submitBtn: {
+    backgroundColor: '#3B82F6',
+    padding: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+
+  submitBtnText: { color: '#fff', fontWeight: '800' },
+
+  errorText: { color: '#EF4444', fontSize: 11 },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  successBox: {
+    backgroundColor: '#1E293B',
+    padding: 30,
+    borderRadius: 20,
+    alignItems: 'center',
+  },
+
+  successCheck: { fontSize: 40, color: '#22C55E' },
+  successTitle: { color: '#fff', fontSize: 18, fontWeight: '800' },
+  successMsg: { color: '#94A3B8', textAlign: 'center', marginTop: 6 },
 });

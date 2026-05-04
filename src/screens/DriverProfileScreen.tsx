@@ -1,93 +1,91 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, ActivityIndicator, ScrollView, TouchableOpacity, SafeAreaView } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../utils/supabase';
 
-export default function DriverProfileScreen({ navigation }: any) {
-  const [driver, setDriver] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => { fetchDriverProfile(); }, []);
-
-  const fetchDriverProfile = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data, error } = await supabase.from('drivers').select('*').eq('user_id', user.id).single();
-        if (error) throw error;
-        setDriver(data);
-      }
-    } catch (error) { console.error(error); } finally { setLoading(false); }
-  };
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigation.replace('Auth');
-  };
-
-  if (loading) return <ActivityIndicator style={styles.centered} size="large" color="#3B82F6" />;
+export default function DriverProfileScreen() {
+  const MenuItem = ({ title, value }: { title: string, value?: string }) => (
+    <TouchableOpacity style={styles.menuItem}>
+      <Text style={styles.menuTitle}>{title}</Text>
+      {value ? <Text style={styles.menuValue}>{value}</Text> : <Text style={styles.arrow}>→</Text>}
+    </TouchableOpacity>
+  );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.topUtility}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backText}>← BACK</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={handleLogout}>
-          <Text style={styles.logoutText}>LOGOUT</Text>
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.profileHeader}>
-          <View style={styles.imageBox}>
-            {driver?.driver_photo ? (
-              <Image source={{ uri: driver.driver_photo }} style={styles.photo} />
-            ) : (
-              <Text style={styles.initials}>{driver?.name?.charAt(0)}</Text>
-            )}
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.header}>
+          <View style={styles.avatarPlaceholder}>
+            <Text style={styles.avatarText}>D</Text>
           </View>
-          <Text style={styles.name}>{driver?.name || 'Authorized Driver'}</Text>
-          <View style={styles.statusChip}>
-            <Text style={styles.statusText}>{driver?.status || 'Active'}</Text>
+          <Text style={styles.name}>Debojyoti</Text>
+          <Text style={styles.vehicle}>WB 02 AB 1234 • Shuttle Van</Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Account</Text>
+          <View style={styles.menuGroup}>
+            <MenuItem title="Personal Info" />
+            <MenuItem title="Vehicle Documents" />
+            <MenuItem title="Payout Methods" />
           </View>
         </View>
 
-        <View style={styles.statsSection}>
-          <Text style={styles.sectionLabel}>OPERATIONAL RECORDS</Text>
-          <InfoBox label="LICENSE" value={driver?.license_number} />
-          <InfoBox label="EXPERIENCE" value={`${driver?.experience_years} Years`} />
-          <InfoBox label="CONTACT" value={driver?.phone} />
-          <InfoBox label="TOTAL TRIPS" value={driver?.total_trips} />
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Preferences</Text>
+          <View style={styles.menuGroup}>
+            <MenuItem title="Language" value="English" />
+            <MenuItem title="Navigation App" value="Google Maps" />
+          </View>
         </View>
+
+        <TouchableOpacity
+          style={styles.logoutCard}
+          onPress={async () => {
+            await supabase.auth.signOut();
+          }}
+        >
+          <Text style={styles.logoutText}>Log Out</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const InfoBox = ({ label, value }: any) => (
-  <View style={styles.infoBox}>
-    <Text style={styles.infoLabel}>{label}</Text>
-    <Text style={styles.infoValue}>{value || '—'}</Text>
-  </View>
-);
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0F172A' },
-  centered: { flex: 1, backgroundColor: '#0F172A', justifyContent: 'center' },
-  topUtility: { flexDirection: 'row', justifyContent: 'space-between', padding: 20, backgroundColor: '#1E293B' },
-  backText: { color: '#94A3B8', fontWeight: '800', fontSize: 12 },
-  logoutText: { color: '#EF4444', fontWeight: '800', fontSize: 12 },
-  scrollContent: { padding: 24 },
-  profileHeader: { alignItems: 'center', marginBottom: 40 },
-  imageBox: { width: 100, height: 100, borderRadius: 24, backgroundColor: '#1E293B', justifyContent: 'center', alignItems: 'center', marginBottom: 16, borderWidth: 1, borderColor: '#334155', overflow: 'hidden' },
-  photo: { width: '100%', height: '100%' },
-  initials: { color: '#FFF', fontSize: 32, fontWeight: '800' },
-  name: { color: '#FFF', fontSize: 24, fontWeight: '800', marginBottom: 8 },
-  statusChip: { backgroundColor: '#3B82F6', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 8 },
-  statusText: { color: '#FFF', fontSize: 10, fontWeight: '900', textTransform: 'uppercase' },
-  statsSection: { gap: 12 },
-  sectionLabel: { color: '#64748B', fontSize: 11, fontWeight: '800', marginBottom: 8, letterSpacing: 1 },
-  infoBox: { backgroundColor: '#1E293B', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#334155' },
-  infoLabel: { color: '#94A3B8', fontSize: 10, fontWeight: '700', marginBottom: 4 },
-  infoValue: { color: '#FFF', fontSize: 16, fontWeight: '600' }
+  safeArea: { flex: 1, backgroundColor: '#F9FAFB' },
+  container: { padding: 24 },
+  header: { alignItems: 'center', marginBottom: 32 },
+  avatarPlaceholder: {
+    width: 80, height: 80, borderRadius: 40,
+    backgroundColor: '#111827', justifyContent: 'center', alignItems: 'center',
+    marginBottom: 16,
+  },
+  logoutCard: {
+    backgroundColor: '#FEE2E2',
+    padding: 16,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  
+  avatarText: { fontSize: 32, color: '#FFFFFF', fontWeight: '600' },
+  name: { fontSize: 24, fontWeight: '700', color: '#111827', marginBottom: 4 },
+  vehicle: { fontSize: 14, color: '#6B7280' },
+  section: { marginBottom: 32 },
+  sectionTitle: { fontSize: 12, fontWeight: '600', color: '#9CA3AF', textTransform: 'uppercase', marginBottom: 8, marginLeft: 4 },
+  menuGroup: { backgroundColor: '#FFFFFF', borderRadius: 8, borderWidth: 1, borderColor: '#E5E7EB', overflow: 'hidden' },
+  menuItem: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    padding: 16, borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
+  },
+  menuTitle: { fontSize: 16, color: '#374151' },
+  menuValue: { fontSize: 14, color: '#6B7280' },
+  arrow: { color: '#9CA3AF', fontSize: 18 },
+  logoutButton: { padding: 16, alignItems: 'center', marginTop: 16 },
+
+  logoutText: {
+    color: '#EF4444',
+    fontSize: 16,
+    fontWeight: '700',
+  }
 });
