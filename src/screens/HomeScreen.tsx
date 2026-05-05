@@ -19,20 +19,23 @@ type NavProp = NativeStackNavigationProp<
 
 export default function HomeScreen() {
   const [driverName, setDriverName] = useState('');
+  const [todayTrips, setTodayTrips] = useState(0);
+
   const navigation = useNavigation() as NavProp;
 
   useEffect(() => {
     getDriver();
+    getTodayTrips();
   }, []);
 
+  // 🔥 DRIVER NAME
   const getDriver = async () => {
     const { data: userData } = await supabase.auth.getUser();
-
     const user = userData?.user;
 
     if (!user) return;
 
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('drivers')
       .select('name')
       .eq('email', user.email)
@@ -41,6 +44,46 @@ export default function HomeScreen() {
     if (data) {
       setDriverName(data.name);
     }
+  };
+
+  // 🔥 TODAY TRIPS COUNT
+  const getTodayTrips = async () => {
+    const { data: userData } = await supabase.auth.getUser();
+    const user = userData?.user;
+
+    if (!user) return;
+
+    const { data: driverData } = await supabase
+      .from('drivers')
+      .select('id')
+      .eq('email', user.email)
+      .single();
+
+    if (!driverData) return;
+
+    const today = new Date().toISOString().split('T')[0];
+
+    const { data, error } = await supabase
+      .from('trips')
+      .select(`
+        id,
+        schedules (
+          schedule_date
+        )
+      `)
+      .eq('driver_id', driverData.id);
+
+    if (error) {
+      console.log(error);
+      return;
+    }
+
+    const count =
+      data?.filter(
+        (t) => t?.schedules?.[0]?.schedule_date === today
+      ).length || 0;
+
+    setTodayTrips(count);
   };
 
   return (
@@ -58,24 +101,29 @@ export default function HomeScreen() {
         {/* STATUS */}
         <View style={styles.statusCard}>
           <View style={styles.statusDot} />
-          <Text style={styles.statusText}>You are currently ONLINE</Text>
+          <Text style={styles.statusText}>
+            You are currently ONLINE
+          </Text>
         </View>
 
+        {/* QUICK MENU */}
         <View style={styles.quickMenu}>
 
-          {/* PROFILE BUTTON */}
           <TouchableOpacity
             style={styles.menuCard}
             onPress={() => navigation.navigate('DriverProfile')}
           >
             <Text style={styles.menuTitle}>My Profile</Text>
-            <Text style={styles.menuSub}>View & manage account</Text>
+            <Text style={styles.menuSub}>
+              View & manage account
+            </Text>
           </TouchableOpacity>
 
         </View>
 
-        {/* EXISTING CONTENT */}
+        {/* ACTIONS */}
         <View style={styles.actionContainer}>
+
           <TouchableOpacity
             style={styles.primaryCard}
             onPress={() => navigation.navigate('Rides')}
@@ -87,16 +135,29 @@ export default function HomeScreen() {
           </TouchableOpacity>
 
           <View style={styles.row}>
-            <TouchableOpacity style={[styles.secondaryCard, { marginRight: 8 }]}>
-              <Text style={styles.statNumber}>12</Text>
-              <Text style={styles.statLabel}>Trips Today</Text>
+
+            {/* 🔥 TODAY TRIPS */}
+            <TouchableOpacity
+              style={[styles.secondaryCard, { marginRight: 8 }]}
+            >
+              <Text style={styles.statNumber}>
+                {todayTrips}
+              </Text>
+              <Text style={styles.statLabel}>
+                Trips Today
+              </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.secondaryCard, { marginLeft: 8 }]}>
+            {/* STATIC RATING (optional later dynamic) */}
+            <TouchableOpacity
+              style={[styles.secondaryCard, { marginLeft: 8 }]}
+            >
               <Text style={styles.statNumber}>4.8</Text>
               <Text style={styles.statLabel}>Rating</Text>
             </TouchableOpacity>
+
           </View>
+
         </View>
 
       </ScrollView>
@@ -112,30 +173,6 @@ const styles = StyleSheet.create({
   container: {
     padding: 24,
   },
-  quickMenu: {
-    marginBottom: 24,
-    gap: 12,
-  },
-
-  menuCard: {
-    backgroundColor: '#F3F4F6',
-    padding: 16,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-
-  menuTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
-  },
-
-  menuSub: {
-    fontSize: 13,
-    color: '#6B7280',
-    marginTop: 4,
-  },
 
   header: {
     marginBottom: 32,
@@ -150,6 +187,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#111827',
   },
+
   statusCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -162,7 +200,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#10B981', // Emerald green for online status
+    backgroundColor: '#10B981',
     marginRight: 12,
   },
   statusText: {
@@ -170,6 +208,29 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#374151',
   },
+
+  quickMenu: {
+    marginBottom: 24,
+    gap: 12,
+  },
+  menuCard: {
+    backgroundColor: '#F3F4F6',
+    padding: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  menuTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  menuSub: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 4,
+  },
+
   actionContainer: {
     gap: 16,
   },
@@ -188,6 +249,7 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     fontSize: 14,
   },
+
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
