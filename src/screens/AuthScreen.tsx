@@ -5,74 +5,72 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
+  Image,
+  Alert,
 } from 'react-native';
-
+import { SafeAreaView } from 'react-native-safe-area-context';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { supabase } from '../utils/supabase';
 import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/AppNavigator';
-
-// ✅ Navigation type
-type NavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
-  'Auth'
->;
 
 export default function AuthScreen() {
-  const navigation = useNavigation<NavigationProp>();
+  const navigation = useNavigation<any>();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        console.log('Login error:', error.message);
-        return;
-      }
-
-      const user = data.user;
-
-      const { data: driverData, error: driverError } = await supabase
-        .from('drivers')
-        .select('*')
-        .eq('email', user?.email)
-        .single();
-
-      if (driverError || !driverData) {
-        console.log('User not found in drivers table');
-        return;
-      }
-
-      console.log('Login success:', driverData);
-
-      navigation.replace('Dashboard');
-
-    } catch (err) {
-      console.log('Unexpected error:', err);
+    if (!email || !password) {
+      Alert.alert('Error', 'Enter email & password');
+      return;
     }
+
+    setLoading(true);
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      setLoading(false);
+      Alert.alert('Login Failed', error.message);
+      return;
+    }
+
+    navigation.replace('Dashboard');
+    setLoading(false);
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.container}
       >
-        <View style={styles.headerContainer}>
-          <Text style={styles.title}>Welcome Back</Text>
-          <Text style={styles.subtitle}>Enter your details to login</Text>
+
+        {/* 🔥 HEADER */}
+        <View style={styles.header}>
+          <Image
+            source={require('../assets/rydon.jpeg')}
+            style={styles.logo}
+          />
+          <View>
+            <Text style={styles.title}>Welcome Back</Text>
+            <Text style={styles.subtitle}>
+              Login to continue
+            </Text>
+          </View>
         </View>
 
-        <View style={styles.formContainer}>
+        {/* 🔥 CARD */}
+        <View style={styles.card}>
+
+          {/* EMAIL */}
           <Text style={styles.label}>Email</Text>
           <TextInput
             style={styles.input}
@@ -80,24 +78,47 @@ export default function AuthScreen() {
             placeholderTextColor="#9CA3AF"
             value={email}
             onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
           />
 
+          {/* PASSWORD */}
           <Text style={styles.label}>Password</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="••••••••"
-            placeholderTextColor="#9CA3AF"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
+          <View style={styles.passwordWrapper}>
+            <TextInput
+              style={styles.passwordInput}
+              placeholder="••••••••"
+              placeholderTextColor="#9CA3AF"
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={setPassword}
+            />
 
-          <TouchableOpacity style={styles.button} onPress={handleLogin}>
-            <Text style={styles.buttonText}>Sign In</Text>
+            <TouchableOpacity
+              onPress={() => setShowPassword(!showPassword)}
+            >
+              <Icon
+                name={showPassword ? 'eye-off' : 'eye'}
+                size={20}
+                color="#6B7280"
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* BUTTON */}
+          <TouchableOpacity
+            style={[
+              styles.button,
+              (!email || !password) && styles.disabledBtn,
+            ]}
+            onPress={handleLogin}
+            disabled={!email || !password || loading}
+          >
+            <Text style={styles.buttonText}>
+              {loading ? 'Signing in...' : 'Sign In'}
+            </Text>
           </TouchableOpacity>
+
         </View>
+
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -106,56 +127,96 @@ export default function AuthScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF', // Pure white background
+    backgroundColor: '#e2df0e',
   },
+
   container: {
     flex: 1,
-    paddingHorizontal: 24,
     justifyContent: 'center',
+    paddingHorizontal: 20,
   },
-  headerContainer: {
-    marginBottom: 40,
+
+  // 🔥 HEADER
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 30,
+    gap: 12,
   },
+
+  logo: {
+    width: 50,
+    height: 50,
+    borderRadius: 10,
+  },
+
   title: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '700',
     color: '#111827',
-    marginBottom: 8,
   },
+
   subtitle: {
-    fontSize: 16,
+    fontSize: 13,
     color: '#6B7280',
   },
-  formContainer: {
-    gap: 16,
+
+  // 🔥 CARD
+  card: {
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+    borderRadius: 16,
+    elevation: 4,
   },
+
   label: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 13,
     color: '#374151',
-    marginBottom: -8,
+    marginBottom: 6,
+    marginTop: 12,
   },
+
   input: {
-    height: 52,
+    height: 48,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    color: '#111827',
+    borderRadius: 10,
+    paddingHorizontal: 14,
     backgroundColor: '#F9FAFB',
   },
+
+  passwordWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 10,
+    backgroundColor: '#F9FAFB',
+    paddingHorizontal: 12,
+  },
+
+  passwordInput: {
+    flex: 1,
+    height: 48,
+  },
+
+  // 🔥 BUTTON
   button: {
-    height: 52,
-    backgroundColor: '#111827', // Solid almost-black button
-    borderRadius: 8,
+    height: 50,
+    backgroundColor: '#111827',
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: 20,
   },
+
+  disabledBtn: {
+    backgroundColor: '#9CA3AF',
+  },
+
   buttonText: {
     color: '#FFFFFF',
-    fontSize: 16,
     fontWeight: '600',
+    fontSize: 15,
   },
 });

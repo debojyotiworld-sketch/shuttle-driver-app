@@ -12,6 +12,8 @@ import {
 import { supabase } from '../utils/supabase';
 import { useNavigation } from '@react-navigation/native';
 import OtpModal from '../components/OtpModal';
+import Geolocation from '@react-native-community/geolocation';
+import { PermissionsAndroid, Platform } from 'react-native';
 
 export default function TripsScreen() {
   const navigation = useNavigation<any>();
@@ -30,11 +32,95 @@ export default function TripsScreen() {
   const [selectedTripStatus, setSelectedTripStatus] = useState('');
   const [otp, setOtp] = useState('');
 
+  const [watchId, setWatchId] = useState<any>(null);
+  const [activeTripId, setActiveTripId] = useState<string | null>(null);
+
   useEffect(() => {
     fetchTrips();
   }, []);
 
-  // 🔥 COUNT
+  // ---------------- LOCATION TRACKING ----------------
+
+  const requestLocationPermission = async () => {
+    if (Platform.OS === 'android') {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+      );
+
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    }
+    return true;
+  };
+
+  const startLocationTracking = async (tripId: string) => {
+    const hasPermission = await requestLocationPermission();
+
+    if (!hasPermission) {
+      Alert.alert('Permission denied');
+      return;
+    }
+
+    setActiveTripId(tripId);
+
+    const id = Geolocation.watchPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude, speed } = position.coords;
+
+          const safeSpeed =
+            typeof speed === 'number' && !isNaN(speed) ? speed : 0;
+
+          const { error } = await supabase
+            .from('trip_locations')
+            .insert({
+              trip_id: tripId,
+              latitude,
+              longitude,
+              speed_kmh: Number((safeSpeed * 3.6).toFixed(1)),
+            });
+
+          if (error) {
+            console.log('Insert error:', error.message);
+          }
+        } catch (err) {
+          console.log('Unexpected error:', err);
+        }
+      },
+      (error) => {
+        console.log('GPS error:', error.message);
+      },
+      {
+        enableHighAccuracy: true,
+
+        // 🔥 More practical values
+        distanceFilter: 0,
+        interval: 5000,
+        fastestInterval: 10000,
+
+        timeout: 15000,
+        maximumAge: 10000,
+      }
+    );
+
+    setWatchId(id);
+  };
+  const stopLocationTracking = async (tripId: string) => {
+    if (watchId !== null) {
+      Geolocation.clearWatch(watchId);
+      setWatchId(null);
+    }
+
+    setActiveTripId(null);
+
+    await supabase
+      .from('trips')
+      .update({ status: 'completed' })
+      .eq('id', tripId);
+
+    fetchTrips();
+  };
+  // ---------------- PASSENGER COUNT ----------------
+
   const getPassengerCount = async (tripId: string) => {
     const { count } = await supabase
       .from('bookings')
@@ -44,7 +130,8 @@ export default function TripsScreen() {
     return count || 0;
   };
 
-  // 🔥 FETCH TRIPS
+  // ---------------- FETCH TRIPS ----------------
+
   const fetchTrips = async () => {
     setLoading(true);
 
@@ -80,36 +167,56 @@ export default function TripsScreen() {
       }))
     );
 
-    setTrips(enriched);
+    const sorted = enriched.sort((a, b) => {
+      const dateA = new Date(a.schedules?.[0]?.schedule_date).getTime();
+      const dateB = new Date(b.schedules?.[0]?.schedule_date).getTime();
+
+      const timeA = a.schedules?.[0]?.departure_time || '';
+      const timeB = b.schedules?.[0]?.departure_time || '';
+
+      return dateA - dateB || timeA.localeCompare(timeB);
+    });
+
+    setTrips(sorted);
     setLoading(false);
   };
 
-  // 🔥 FILTER
-  const getFilteredTrips = () => {
-    const today = new Date().toISOString().split('T')[0];
+  // ---------------- STATUS UPDATE ----------------
 
-    if (activeTab === 'today') {
-      return trips.filter(
-        (t) => t?.schedules?.[0]?.schedule_date === today
-      );
+  const updateTripStatus = async (tripId: string, status: string) => {
+    if (activeTripId && activeTripId !== tripId) {
+      Alert.alert('Finish current trip first');
+      return;
     }
 
-    if (activeTab === 'upcoming') {
-      return trips.filter(
-        (t) =>
-          t?.schedules?.[0]?.schedule_date > today &&
-          t.status === 'scheduled'
-      );
+    // ✅ ONLY ONE UPDATE HERE
+    const { error } = await supabase
+      .from('trips')
+      .update({ status })
+      .eq('id', tripId);
+
+    if (error) {
+      Alert.alert(error.message);
+      return;
     }
 
-    return trips;
+    if (status === 'in_progress') {
+      await startLocationTracking(tripId);
+    }
+
+    if (status === 'completed' || status === 'cancelled') {
+      await stopLocationTracking(tripId);
+    }
+
+    fetchTrips();
   };
 
-  // 🔥 OPEN MANIFEST
+  // ---------------- MANIFEST ----------------
+
   const openManifest = async (trip: any) => {
     const { data } = await supabase
       .from('bookings')
-      .select(`booking_code,pickup,drop,status,customers(name)`)
+      .select(`id,pnr,booking_code,pickup,drop,status,customers(name)`)
       .eq('trip_id', trip.id);
 
     setSelectedTripStatus(trip.status);
@@ -117,13 +224,8 @@ export default function TripsScreen() {
     setModalVisible(true);
   };
 
-  // 🔥 UPDATE STATUS
-  const updateTripStatus = async (tripId: string, status: string) => {
-    await supabase.from('trips').update({ status }).eq('id', tripId);
-    fetchTrips();
-  };
+  // ---------------- OTP ----------------
 
-  // 🔥 PASSENGER CLICK → OTP
   const handlePassengerPress = (item: any) => {
     if (selectedTripStatus !== 'in_progress') {
       Alert.alert('Trip not started yet');
@@ -135,19 +237,10 @@ export default function TripsScreen() {
     setOtpVisible(true);
   };
 
-  // 🔥 VERIFY OTP
   const verifyOtp = async () => {
     if (!selectedBooking) return;
 
-    const { data, error } = await supabase
-      .from('bookings')
-      .select('pnr')
-      .eq('id', selectedBooking.id)
-      .single();
-
-    if (error) return;
-
-    if (data?.pnr?.toString() === otp.toString()) {
+    if (selectedBooking.pnr?.trim() === otp.trim()) {
       await supabase
         .from('bookings')
         .update({ status: 'confirmed' })
@@ -161,6 +254,17 @@ export default function TripsScreen() {
     }
   };
 
+  // ---------------- FILTER ----------------
+
+  const getFilteredTrips = () => {
+    const today = new Date().toISOString().slice(0, 10);
+
+    return trips.filter((t) => {
+      const date = t?.schedules?.[0]?.schedule_date?.slice(0, 10);
+      return activeTab === 'all' || date === today;
+    });
+  };
+
   if (loading) {
     return (
       <View style={styles.center}>
@@ -169,14 +273,36 @@ export default function TripsScreen() {
     );
   }
 
+  // ---------------- UI ----------------
+
   return (
     <View style={styles.container}>
+
+      {/* HEADER */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>My Trips</Text>
+        <Text style={styles.headerSub}>
+          Manage and track your assigned trips
+        </Text>
+      </View>
 
       {/* TABS */}
       <View style={styles.tabContainer}>
         {['today', 'upcoming', 'all'].map((tab) => (
-          <TouchableOpacity key={tab} onPress={() => setActiveTab(tab as any)}>
-            <Text style={activeTab === tab ? styles.activeTab : styles.tab}>
+          <TouchableOpacity
+            key={tab}
+            onPress={() => setActiveTab(tab as any)}
+            style={[
+              styles.tabBtn,
+              activeTab === tab && styles.activeTabBtn,
+            ]}
+          >
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === tab && styles.activeTabText,
+              ]}
+            >
               {tab.toUpperCase()}
             </Text>
           </TouchableOpacity>
@@ -187,41 +313,72 @@ export default function TripsScreen() {
       <FlatList
         data={getFilteredTrips()}
         keyExtractor={(item) => item.id}
+        contentContainerStyle={{ paddingBottom: 20 }}
         renderItem={({ item }) => {
           const status = item.status?.toLowerCase();
+          const isActive = activeTripId === item.id;
+          const isDisabled = !!activeTripId && activeTripId !== item.id;
 
           return (
-            <View style={styles.card}>
+            <View
+              style={[
+                styles.card,
+                isDisabled && styles.disabledCard,
+                isActive && styles.activeCard,
+              ]}
+            >
 
-              {/* CARD */}
+              {/* TOP ROW */}
               <TouchableOpacity
+                disabled={isDisabled}
                 onPress={() => openManifest(item)}
               >
                 <View style={styles.row}>
-                  <View>
+
+                  <View style={{ flex: 1 }}>
                     <Text style={styles.title}>
                       {item.schedules?.routes?.name}
                     </Text>
+
                     <Text style={styles.meta}>
-                      {item.schedules?.departure_time}
+                      🕒 {item.schedules?.departure_time}
                     </Text>
+
+                    <Text style={styles.meta}>
+                      📅 {item.schedules?.schedule_date?.slice(0, 10)}
+                    </Text>
+
                     <Text style={styles.meta}>
                       Status: {status}
                     </Text>
+
+                    {/* ACTIVE TAG */}
+                    {isActive && (
+                      <Text style={styles.activeBadge}>
+                        ● ACTIVE TRIP
+                      </Text>
+                    )}
                   </View>
 
+                  {/* PASSENGER COUNT */}
                   <View style={styles.passengerCapsule}>
                     <Text style={styles.passengerText}>
                       {item.passengerCount}
                     </Text>
                   </View>
+
                 </View>
               </TouchableOpacity>
 
-              {/* ACTIONS */}
+              {/* ACTION BUTTONS */}
+
               {status === 'scheduled' && (
                 <TouchableOpacity
-                  style={styles.startBtn}
+                  disabled={isDisabled}
+                  style={[
+                    styles.startBtn,
+                    isDisabled && styles.disabledBtn,
+                  ]}
                   onPress={() =>
                     updateTripStatus(item.id, 'in_progress')
                   }
@@ -248,7 +405,6 @@ export default function TripsScreen() {
                     onPress={() =>
                       navigation.navigate('Support', {
                         tripId: item.id,
-                        issueType: 'trip',
                       })
                     }
                   >
@@ -279,6 +435,9 @@ export default function TripsScreen() {
                 <Text>
                   {item.pickup} → {item.drop}
                 </Text>
+                <Text style={styles.status}>
+                  {item.status.toUpperCase()}
+                </Text>
               </TouchableOpacity>
             )}
           />
@@ -300,82 +459,187 @@ export default function TripsScreen() {
         onVerify={verifyOtp}
         onClose={() => setOtpVisible(false)}
       />
+
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  container: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+  },
 
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  // 🔥 HEADER
+  header: {
+    marginBottom: 16,
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  headerSub: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+
+  // 🔥 TABS (modern pill style)
   tabContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 12,
+    marginBottom: 16,
+    gap: 8,
   },
-  tab: { fontSize: 14, color: '#6B7280', padding: 6 },
-  activeTab: {
-    fontSize: 14,
-    fontWeight: '700',
-    borderBottomWidth: 2,
-    borderColor: '#111827',
-    padding: 6,
+  tabBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
   },
-  startBtn: {
-    backgroundColor: '#16A34A',
-    padding: 10,
-    borderRadius: 8,
-    marginTop: 8,
+  activeTabBtn: {
+    backgroundColor: '#111827',
   },
-
-  completeBtn: {
-    backgroundColor: '#2563EB',
-    padding: 10,
-    borderRadius: 8,
-    marginTop: 8,
+  tabText: {
+    fontSize: 13,
+    color: '#6B7280',
+  },
+  activeTabText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
 
-  cancelBtn: {
-    backgroundColor: '#DC2626',
-    padding: 10,
-    borderRadius: 8,
-    marginTop: 8,
-  },
+  // 🔥 CARD
   card: {
     padding: 16,
     backgroundColor: '#F9FAFB',
-    borderRadius: 10,
+    borderRadius: 12,
     marginBottom: 12,
   },
-  title: { fontSize: 16, fontWeight: '700' },
-  meta: { fontSize: 13, color: '#6B7280', marginTop: 4 },
-  btnText: { color: '#fff', fontWeight: '600', textAlign: 'center' },
-  row: { flexDirection: 'row', justifyContent: 'space-between' },
+
+  activeCard: {
+    borderWidth: 2,
+    borderColor: '#16A34A',
+    backgroundColor: '#ECFDF5',
+  },
+
+  disabledCard: {
+    opacity: 0.4,
+  },
+
+  // 🔥 ROW
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+
+  // 🔥 TEXT
+  title: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  meta: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 4,
+  },
+
+  activeBadge: {
+    marginTop: 6,
+    color: '#16A34A',
+    fontWeight: '700',
+    fontSize: 12,
+  },
+
+  // 🔥 PASSENGER COUNT
   passengerCapsule: {
     backgroundColor: '#111827',
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
     alignSelf: 'center',
   },
-  passengerText: { color: '#fff', fontWeight: '700' },
+  passengerText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
 
-  modalContainer: { flex: 1, padding: 20 },
-  heading: { fontSize: 20, fontWeight: '700', marginBottom: 16 },
+  // 🔥 BUTTONS
+  startBtn: {
+    backgroundColor: '#16A34A',
+    padding: 12,
+    borderRadius: 10,
+    marginTop: 10,
+  },
+
+  completeBtn: {
+    backgroundColor: '#2563EB',
+    padding: 12,
+    borderRadius: 10,
+    marginTop: 10,
+  },
+
+  cancelBtn: {
+    backgroundColor: '#DC2626',
+    padding: 12,
+    borderRadius: 10,
+    marginTop: 10,
+  },
+
+  disabledBtn: {
+    backgroundColor: '#9CA3AF',
+  },
+
+  btnText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+
+  // 🔥 MODAL
+  modalContainer: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: '#FFFFFF',
+  },
+
+  heading: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 16,
+    color: '#111827',
+  },
 
   passengerCard: {
-    padding: 12,
+    padding: 14,
     borderBottomWidth: 1,
     borderColor: '#E5E7EB',
   },
-  name: { fontSize: 16, fontWeight: '600' },
-  status: { marginTop: 4, color: '#10B981' },
+
+  name: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+  },
+
+  status: {
+    marginTop: 4,
+    color: '#10B981',
+  },
 
   closeBtn: {
     marginTop: 20,
     backgroundColor: '#111827',
     padding: 14,
     alignItems: 'center',
-    borderRadius: 8,
-  },
+    borderRadius: 10,
+  }
 });
